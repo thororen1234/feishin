@@ -767,13 +767,18 @@ const AlbumSection = ({ albums, controls, cq, releaseType, rows, title }: AlbumS
     const displayedAlbums = showAll ? albums : albums.slice(0, MAX_SECTION_CARDS);
     const hasMoreAlbums = albums.length > MAX_SECTION_CARDS;
 
+    const nonExternalAlbums = useMemo(
+        () => albums.filter((album) => album._serverType !== ServerType.EXTERNAL),
+        [albums],
+    );
+
     const handlePlay = useCallback(
         (playType: Play) => {
-            if (albums.length === 0) return;
-            const albumIds = albums.map((album) => album.id);
+            if (nonExternalAlbums.length === 0) return;
+            const albumIds = nonExternalAlbums.map((album) => album.id);
             player.addToQueueByFetch(serverId, albumIds, LibraryItem.ALBUM, playType);
         },
-        [albums, player, serverId],
+        [nonExternalAlbums, player, serverId],
     );
 
     const handlePlayNext = usePlayButtonClick({
@@ -814,7 +819,7 @@ const AlbumSection = ({ albums, controls, cq, releaseType, rows, title }: AlbumS
                 </Group>
                 <div className={styles.albumSectionDividerContainer}>
                     <div className={styles.albumSectionDivider} />
-                    {albumCount > 0 && (
+                    {nonExternalAlbums.length > 0 && (
                         <ActionIconGroup>
                             <PlayTooltip type={Play.NOW}>
                                 <ActionIcon
