@@ -263,6 +263,10 @@ export const queryKeys: Record<
         },
         root: (serverId: string) => [serverId, 'genres'] as const,
     },
+    musicbrainz: {
+        artist: (mbzArtistId: string) => ['musicbrainz', 'artist', mbzArtistId] as const,
+        root: () => ['musicbrainz'] as const,
+    },
     musicFolders: {
         list: (serverId: string) => [serverId, 'musicFolders', 'list'] as const,
     },
