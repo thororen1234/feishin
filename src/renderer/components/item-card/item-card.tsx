@@ -40,6 +40,7 @@ import {
     Artist,
     LibraryItem,
     Playlist,
+    ServerType,
     Song,
 } from '/@/shared/types/domain-types';
 import { DragOperation, DragTarget } from '/@/shared/types/drag-and-drop';
@@ -322,9 +323,11 @@ const CompactItemCard = ({
                 ? (data as { userRating: null | number }).userRating
                 : null;
         const hasRating = showRating && userRating !== null && userRating > 0;
+        const isExternal = data._serverType === ServerType.EXTERNAL;
 
         const imageContainerClassName = clsx(styles.imageContainer, {
             [styles.isRound]: isRound,
+            [styles.noHoverOverlay]: isExternal,
         });
 
         const imageContainerContent = (
@@ -341,7 +344,7 @@ const CompactItemCard = ({
                 {isFavorite && <div className={styles.favoriteBadge} />}
                 {hasRating && <div className={styles.ratingBadge}>{userRating}</div>}
                 <AnimatePresence>
-                    {withControls && showControls && data && (
+                    {withControls && showControls && data && !isExternal && (
                         <ItemCardControls
                             controls={controls}
                             enableExpansion={enableExpansion}
@@ -376,6 +379,7 @@ const CompactItemCard = ({
             <div
                 className={clsx(styles.container, styles.compact, {
                     [styles.dragging]: isDragging,
+                    [styles.external]: isExternal,
                     [styles.selected]: isSelected,
                 })}
                 ref={ref}
@@ -535,10 +539,6 @@ const DefaultItemCard = ({
             e.stopPropagation();
         };
 
-        const imageContainerClassName = clsx(styles.imageContainer, {
-            [styles.isRound]: isRound,
-        });
-
         const isFavorite =
             'userFavorite' in data && (data as { userFavorite: boolean }).userFavorite;
         const userRating =
@@ -547,6 +547,12 @@ const DefaultItemCard = ({
                 ? (data as { userRating: null | number }).userRating
                 : null;
         const hasRating = showRating && userRating !== null && userRating > 0;
+        const isExternal = data._serverType === ServerType.EXTERNAL;
+
+        const imageContainerClassName = clsx(styles.imageContainer, {
+            [styles.isRound]: isRound,
+            [styles.noHoverOverlay]: isExternal,
+        });
 
         const imageContainerContent = (
             <>
@@ -560,7 +566,7 @@ const DefaultItemCard = ({
                 {isFavorite && <div className={styles.favoriteBadge} />}
                 {hasRating && <div className={styles.ratingBadge}>{userRating}</div>}
                 <AnimatePresence>
-                    {withControls && showControls && (
+                    {withControls && showControls && !isExternal && (
                         <ItemCardControls
                             controls={controls}
                             enableExpansion={enableExpansion}
@@ -577,6 +583,7 @@ const DefaultItemCard = ({
         return (
             <div
                 className={clsx(styles.container, {
+                    [styles.external]: isExternal,
                     [styles.selected]: isSelected,
                 })}
             >
@@ -816,10 +823,6 @@ const PosterItemCard = ({
             e.stopPropagation();
         };
 
-        const imageContainerClassName = clsx(styles.imageContainer, {
-            [styles.isRound]: isRound,
-        });
-
         const isFavorite =
             'userFavorite' in data && (data as { userFavorite: boolean }).userFavorite;
         const userRating =
@@ -828,6 +831,12 @@ const PosterItemCard = ({
                 ? (data as { userRating: null | number }).userRating
                 : null;
         const hasRating = showRating && userRating !== null && userRating > 0;
+        const isExternal = data._serverType === ServerType.EXTERNAL;
+
+        const imageContainerClassName = clsx(styles.imageContainer, {
+            [styles.isRound]: isRound,
+            [styles.noHoverOverlay]: isExternal,
+        });
 
         const imageContainerContent = (
             <>
@@ -841,7 +850,7 @@ const PosterItemCard = ({
                 {isFavorite && <div className={styles.favoriteBadge} />}
                 {hasRating && <div className={styles.ratingBadge}>{userRating}</div>}
                 <AnimatePresence>
-                    {withControls && showControls && data && (
+                    {withControls && showControls && data && !isExternal && (
                         <ItemCardControls
                             controls={controls}
                             enableExpansion={enableExpansion}
@@ -860,6 +869,7 @@ const PosterItemCard = ({
             <div
                 className={clsx(styles.container, styles.poster, {
                     [styles.dragging]: isDragging,
+                    [styles.external]: isExternal,
                     [styles.selected]: isSelected,
                 })}
                 ref={ref}

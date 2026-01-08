@@ -24,6 +24,7 @@ import { ItemTableListColumn } from '/@/renderer/components/item-list/item-table
 import { ItemControls } from '/@/renderer/components/item-list/types';
 import { artistsQueries } from '/@/renderer/features/artists/api/artists-api';
 import { AlbumArtistGridCarousel } from '/@/renderer/features/artists/components/album-artist-grid-carousel';
+import { musicbrainzQueries } from '/@/renderer/features/musicbrainz/api/musicbrainz-api';
 import { useIsPlayerFetching, usePlayer } from '/@/renderer/features/player/context/player-context';
 import { ListConfigMenu } from '/@/renderer/features/shared/components/list-config-menu';
 import {
@@ -1094,16 +1095,44 @@ const ArtistAlbums = ({ albumsQuery }: ArtistAlbumsProps) => {
         albumArtistId?: string;
         artistId?: string;
     };
+
+    const serverId = useCurrentServerId();
     const routeId = (artistId || albumArtistId) as string;
+
+    const detailQuery = useSuspenseQuery(
+        artistsQueries.albumArtistDetail({
+            query: { id: routeId },
+            serverId: serverId,
+        }),
+    );
+
+    const musicbrainzArtistQuery = useQuery({
+        ...musicbrainzQueries.artist({ mbzArtistId: detailQuery.data?.mbz as string }),
+        meta: {
+            albumArtist: detailQuery.data,
+        },
+    });
+
+    const musicbrainzAlbums = useMemo(() => {
+        return musicbrainzArtistQuery.data || [];
+    }, [musicbrainzArtistQuery.data]);
 
     const rows = useGridRows(LibraryItem.ALBUM, ItemListKey.ALBUM);
     const controls = useDefaultItemListControls();
 
     const filteredAndSortedAlbums = useMemo(() => {
-        const albums = albumsQuery.data?.items || [];
+        const existingReleaseIds = new Set(
+            albumsQuery.data?.items?.map((item) => item.mbzId) || [],
+        );
+
+        const newMusicbrainzAlbums = musicbrainzAlbums.filter(
+            (album) => !existingReleaseIds.has(album.mbzId),
+        );
+
+        const albums = [...(albumsQuery.data?.items || []), ...newMusicbrainzAlbums];
         const searched = searchLibraryItems(albums, debouncedSearchTerm, LibraryItem.ALBUM);
         return sortAlbumList(searched, sortBy, sortOrder);
-    }, [albumsQuery.data?.items, debouncedSearchTerm, sortBy, sortOrder]);
+    }, [albumsQuery.data?.items, debouncedSearchTerm, musicbrainzAlbums, sortBy, sortOrder]);
 
     const albumsByReleaseType = useMemo(() => {
         return groupAlbumsByReleaseType(filteredAndSortedAlbums, routeId, groupingType);

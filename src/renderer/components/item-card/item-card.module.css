@@ -20,6 +20,11 @@
     opacity: 0.5;
 }
 
+.container.external {
+    opacity: 0.6;
+    filter: grayscale(0.3) saturate(0.7);
+}
+
 .image-container {
     position: relative;
     display: block;
@@ -59,6 +64,14 @@
 .image-container.is-round {
     &::before {
         border-radius: 50%;
+    }
+}
+
+.image-container.no-hover-overlay {
+    &:hover {
+        &::before {
+            opacity: 0 !important;
+        }
     }
 }
 
