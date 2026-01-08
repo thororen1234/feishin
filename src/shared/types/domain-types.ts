@@ -34,6 +34,7 @@ export enum LibraryItem {
 }
 
 export enum ServerType {
+    EXTERNAL = 'external', // This is not an actual server type. This is used when fetching from external sources (e.g. musicbrainz)
     JELLYFIN = 'jellyfin',
     NAVIDROME = 'navidrome',
     SUBSONIC = 'subsonic',
