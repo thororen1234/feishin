@@ -71,24 +71,20 @@ jobs:
 
           echo "release_id=$release_id" >> $GITHUB_OUTPUT
 
-      - name: cd work
-        run: cd /home/runner/work
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
       - name: Setup Node
         if: steps.check_release.outputs.status != '200'
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: "pnpm"
 
       - name: Build and upload Windows installer
         if: steps.check_release.outputs.status != '200'
         run: |
           cd work
+          corepack enable
+          corepack prepare pnpm --activate
+          pnpm install
+          pnpm package:win
           pnpm install
           pnpm package:win
           FILE=$(ls dist/*.exe)
