@@ -74,7 +74,9 @@ jobs:
       - name: cd work
         run: cd /home/runner/work
 
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - name: Setup Node
         if: steps.check_release.outputs.status != '200'
