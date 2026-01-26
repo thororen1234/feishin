@@ -204,7 +204,7 @@ export const useDiscordRpc = () => {
                             song._serverType === ServerType.SUBSONIC
                         ) {
                             try {
-                                const info = await api.controller.getAlbumInfo({
+                                const info = await api.controller.getSongDetail({
                                     apiClientProps: { serverId: song._serverId },
                                     query: { id: song.albumId },
                                 });

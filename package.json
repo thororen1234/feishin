@@ -13,6 +13,10 @@
     "bugs": {
         "url": "https://github.com/jeffvli/feishin/issues"
     },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/thororen1234/feishin.git"
+    },
     "license": "GPL-3.0",
     "author": {
         "name": "jeffvli",
@@ -179,6 +183,7 @@
     "pnpm": {
         "onlyBuiltDependencies": [
             "electron",
+            "electron-winstaller",
             "esbuild"
         ]
     },
