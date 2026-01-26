@@ -52,11 +52,12 @@ jobs:
 
       - name: Create mirrored release in fork
         if: steps.check_release.outputs.status != '200'
+        id: create_release
         run: |
           title=$(jq -r .name upstream_release.json)
           body=$(jq -r .body upstream_release.json)
 
-          curl -X POST \
+          response=$(curl -s -X POST \
             -H "Authorization: Bearer ${{ github.token }}" \
             -H "Content-Type: application/json" \
             https://api.github.com/repos/${{ env.DOWNSTREAM_OWNER }}/${{ env.DOWNSTREAM_REPO }}/releases \
@@ -69,3 +70,43 @@ jobs:
             "prerelease": false
           }
           EOF
+          )
+
+          release_id=$(echo "$response" | jq -r .id)
+          echo "release_id=$release_id" >> $GITHUB_OUTPUT
+
+      - name: Checkout repo
+        if: steps.check_release.outputs.status != '200'
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        if: steps.check_release.outputs.status != '200'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Setup pnpm
+        if: steps.check_release.outputs.status != '200'
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install dependencies
+        if: steps.check_release.outputs.status != '200'
+        run: pnpm install
+
+      - name: Build Windows installer
+        if: steps.check_release.outputs.status != '200'
+        run: pnpm package:win
+
+      - name: Upload Windows installer to release
+        if: steps.check_release.outputs.status != '200'
+        run: |
+          FILE=$(ls dist/*.exe)
+
+          curl -X POST \
+            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "Content-Type: application/octet-stream" \
+            "https://uploads.github.com/repos/${{ env.DOWNSTREAM_OWNER }}/${{ env.DOWNSTREAM_REPO }}/releases/${{ steps.create_release.outputs.release_id }}/assets?name=$(basename $FILE)" \
+            --data-binary @"$FILE"
