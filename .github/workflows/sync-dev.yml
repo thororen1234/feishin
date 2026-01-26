@@ -87,7 +87,6 @@ jobs:
       - name: Fix permissions
         run: sudo chown -R $USER:$USER work
 
-
       - name: Build and upload Windows installer
         if: steps.check_release.outputs.status != '200'
         run: |
