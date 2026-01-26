@@ -33,35 +33,32 @@ jobs:
       - name: Get latest upstream release
         id: upstream_release
         run: |
-          curl -s \
-            -H "Authorization: Bearer ${{ github.token }}" \
+          curl -s -H "Authorization: Bearer ${{ github.token }}" \
             https://api.github.com/repos/${{ env.UPSTREAM_OWNER }}/${{ env.UPSTREAM_REPO }}/releases/latest \
             > upstream_release.json
 
-          tag=$(jq -r .tag_name upstream_release.json)
-          echo "tag=$tag" >> $GITHUB_OUTPUT
+          echo "tag=$(jq -r .tag_name upstream_release.json)" >> $GITHUB_OUTPUT
 
-      - name: Check if release already exists in fork
+      - name: Check release in fork
         id: check_release
         run: |
           status=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${{ github.token }}" \
             https://api.github.com/repos/${{ env.DOWNSTREAM_OWNER }}/${{ env.DOWNSTREAM_REPO }}/releases/tags/${{ steps.upstream_release.outputs.tag }})
-
           echo "status=$status" >> $GITHUB_OUTPUT
 
-      - name: Create mirrored release in fork
+      - name: Create mirrored release
         if: steps.check_release.outputs.status != '200'
         id: create_release
         run: |
           title=$(jq -r .name upstream_release.json)
           body=$(jq -r .body upstream_release.json)
 
-          response=$(curl -s -X POST \
+          release_id=$(curl -s -X POST \
             -H "Authorization: Bearer ${{ github.token }}" \
             -H "Content-Type: application/json" \
             https://api.github.com/repos/${{ env.DOWNSTREAM_OWNER }}/${{ env.DOWNSTREAM_REPO }}/releases \
-            -d @- <<EOF
+            -d @- <<EOF | jq -r .id
           {
             "tag_name": "${{ steps.upstream_release.outputs.tag }}",
             "name": "$title",
@@ -72,39 +69,14 @@ jobs:
           EOF
           )
 
-          release_id=$(echo "$response" | jq -r .id)
           echo "release_id=$release_id" >> $GITHUB_OUTPUT
 
-      - name: Checkout repo
-        if: steps.check_release.outputs.status != '200'
-        uses: actions/checkout@v4
-        with:
-            clean: true
-
-      - name: Setup Node
-        if: steps.check_release.outputs.status != '200'
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "pnpm"
-
-      - name: Setup pnpm
-        if: steps.check_release.outputs.status != '200'
-        uses: pnpm/action-setup@v3
-        with:
-          version: 10
-
-      - name: Install dependencies
-        if: steps.check_release.outputs.status != '200'
-        run: pnpm install
-
-      - name: Build Windows installer
-        if: steps.check_release.outputs.status != '200'
-        run: pnpm package:win
-
-      - name: Upload Windows installer to release
+      - name: Build and upload Windows installer
         if: steps.check_release.outputs.status != '200'
         run: |
+          cd work
+          pnpm install
+          pnpm package:win
           FILE=$(ls dist/*.exe)
 
           curl -X POST \
