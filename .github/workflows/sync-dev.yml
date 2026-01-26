@@ -71,6 +71,9 @@ jobs:
 
           echo "release_id=$release_id" >> $GITHUB_OUTPUT
 
+      - name: cd work
+        run: cd work
+
       - uses: pnpm/action-setup@v3
 
       - name: Setup Node
