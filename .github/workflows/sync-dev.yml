@@ -87,6 +87,9 @@ jobs:
       - name: Fix permissions
         run: sudo chown -R $USER:$USER work
 
+      - name: Install Wine
+        run: sudo dpkg --add-architecture i386 && sudo apt update && sudo apt install -y wine64 wine32
+
       - name: Build and upload Windows installer
         if: steps.check_release.outputs.status != '200'
         run: |
