@@ -72,7 +72,7 @@ jobs:
           echo "release_id=$release_id" >> $GITHUB_OUTPUT
 
       - name: cd work
-        run: cd work
+        run: cd /home/runner/work
 
       - uses: pnpm/action-setup@v3
 
