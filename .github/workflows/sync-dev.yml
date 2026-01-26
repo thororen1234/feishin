@@ -71,6 +71,19 @@ jobs:
 
           echo "release_id=$release_id" >> $GITHUB_OUTPUT
 
+      - name: Setup Node
+        if: steps.check_release.outputs.status != '200'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Setup pnpm
+        if: steps.check_release.outputs.status != '200'
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+
       - name: Build and upload Windows installer
         if: steps.check_release.outputs.status != '200'
         run: |
