@@ -95,7 +95,7 @@ jobs:
         run: |
           cd work
           pnpm install
-          pnpm package:win
+          pnpm package:win:pr
           FILE=$(ls dist/*.exe)
 
           curl -X POST \
