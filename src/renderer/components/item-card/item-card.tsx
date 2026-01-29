@@ -57,6 +57,7 @@ export interface ItemCardProps {
     enableDrag?: boolean;
     enableExpansion?: boolean;
     enableNavigation?: boolean;
+    imageAsLink?: boolean;
     internalState?: ItemListStateActions;
     isRound?: boolean;
     itemType: LibraryItem;
@@ -71,6 +72,7 @@ export const ItemCard = ({
     enableDrag,
     enableExpansion,
     enableNavigation = true,
+    imageAsLink,
     internalState,
     isRound,
     itemType,
@@ -91,6 +93,7 @@ export const ItemCard = ({
                     enableDrag={enableDrag}
                     enableExpansion={enableExpansion}
                     enableNavigation={enableNavigation}
+                    imageAsLink={imageAsLink}
                     imageUrl={imageUrl}
                     internalState={internalState}
                     isRound={isRound}
@@ -108,6 +111,7 @@ export const ItemCard = ({
                     enableDrag={enableDrag}
                     enableExpansion={enableExpansion}
                     enableNavigation={enableNavigation}
+                    imageAsLink={imageAsLink}
                     imageUrl={imageUrl}
                     internalState={internalState}
                     isRound={isRound}
@@ -126,6 +130,7 @@ export const ItemCard = ({
                     enableDrag={enableDrag}
                     enableExpansion={enableExpansion}
                     enableNavigation={enableNavigation}
+                    imageAsLink={imageAsLink}
                     imageUrl={imageUrl}
                     internalState={internalState}
                     isRound={isRound}
@@ -142,6 +147,7 @@ export interface ItemCardDerivativeProps extends Omit<ItemCardProps, 'type'> {
     controls?: ItemControls;
     enableExpansion?: boolean;
     enableNavigation?: boolean;
+    imageAsLink?: boolean;
     imageUrl: string | undefined;
     internalState?: ItemListStateActions;
     rows: DataRow[];
@@ -154,6 +160,7 @@ const CompactItemCard = ({
     enableDrag,
     enableExpansion,
     enableNavigation,
+    imageAsLink,
     internalState,
     isRound,
     itemType,
@@ -333,6 +340,7 @@ const CompactItemCard = ({
                     className={clsx(styles.image, {
                         [styles.isRound]: isRound,
                     })}
+                    enableDebounce={false}
                     id={data?.imageId}
                     itemType={itemType}
                     src={(data as Album | AlbumArtist | Playlist | Song)?.imageUrl}
@@ -380,7 +388,7 @@ const CompactItemCard = ({
                 })}
                 ref={ref}
             >
-                {enableNavigation && navigationPath && !internalState ? (
+                {enableNavigation && navigationPath && (imageAsLink ?? !internalState) ? (
                     <Link
                         className={imageContainerClassName}
                         draggable={false}
@@ -441,6 +449,7 @@ const DefaultItemCard = ({
     data,
     enableExpansion,
     enableNavigation,
+    imageAsLink,
     internalState,
     isRound,
     itemType,
@@ -553,6 +562,7 @@ const DefaultItemCard = ({
             <>
                 <ItemImage
                     className={clsx(styles.image, { [styles.isRound]: isRound })}
+                    enableDebounce={false}
                     id={data?.imageId}
                     itemType={itemType}
                     src={(data as Album | AlbumArtist | Playlist | Song)?.imageUrl}
@@ -581,7 +591,7 @@ const DefaultItemCard = ({
                     [styles.selected]: isSelected,
                 })}
             >
-                {enableNavigation && navigationPath && !internalState ? (
+                {enableNavigation && navigationPath && (imageAsLink ?? !internalState) ? (
                     <Link
                         className={imageContainerClassName}
                         draggable={false}
@@ -658,6 +668,7 @@ const PosterItemCard = ({
     enableDrag,
     enableExpansion,
     enableNavigation,
+    imageAsLink,
     internalState,
     isRound,
     itemType,
@@ -835,6 +846,7 @@ const PosterItemCard = ({
             <>
                 <ItemImage
                     className={clsx(styles.image, { [styles.isRound]: isRound })}
+                    enableDebounce={false}
                     id={(data as { imageId: string })?.imageId}
                     itemType={itemType}
                     src={(data as { imageUrl: string })?.imageUrl}
@@ -866,7 +878,7 @@ const PosterItemCard = ({
                 })}
                 ref={ref}
             >
-                {enableNavigation && navigationPath && !internalState ? (
+                {enableNavigation && navigationPath && (imageAsLink ?? !internalState) ? (
                     <Link
                         className={imageContainerClassName}
                         draggable={false}
