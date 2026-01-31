@@ -138,7 +138,6 @@
         "saveAndReplace": "save and replace",
         "saveAs": "save as",
         "search": "search",
-        "setting": "setting",
         "setting_one": "setting",
         "setting_other": "settings",
         "slower": "slower",
@@ -447,6 +446,10 @@
         },
         "favorites": {
             "title": "$t(entity.favorite, {\"count\": 2})"
+        },
+        "windowBar": {
+            "paused": "(Paused) ",
+            "privateMode": "(Private mode)"
         },
         "appMenu": {
             "collapseSidebar": "collapse sidebar",
