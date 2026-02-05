@@ -53,7 +53,7 @@ linux:
 npmRebuild: false
 publish:
     provider: github
-    owner: jeffvli
+    owner: thororen1234
     repo: feishin
     channel: latest
     releaseType: draft
