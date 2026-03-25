@@ -11,6 +11,7 @@ import {
     ArtistReleaseTypeSettings,
     ArtistSettings,
 } from '/@/renderer/features/settings/components/general/artist-settings';
+import { FullscreenPlayerSettings } from '/@/renderer/features/settings/components/general/fullscreen-player-settings';
 import { HomeSettings } from '/@/renderer/features/settings/components/general/home-settings';
 import { PathSettings } from '/@/renderer/features/settings/components/general/path-settings';
 import {
@@ -19,6 +20,7 @@ import {
 } from '/@/renderer/features/settings/components/settings-section';
 import {
     HomeFeatureStyle,
+    SideQueueLayout,
     SideQueueType,
     useFontSettings,
     useGeneralSettings,
@@ -70,6 +72,23 @@ const SIDE_QUEUE_OPTIONS = [
             postProcess: 'sentenceCase',
         }),
         value: 'sideDrawerQueue',
+    },
+];
+
+const SIDE_QUEUE_LAYOUT_OPTIONS = [
+    {
+        label: t('setting.sidePlayQueueLayout', {
+            context: 'optionHorizontal',
+            postProcess: 'sentenceCase',
+        }),
+        value: 'horizontal',
+    },
+    {
+        label: t('setting.sidePlayQueueLayout', {
+            context: 'optionVertical',
+            postProcess: 'sentenceCase',
+        }),
+        value: 'vertical',
     },
 ];
 
@@ -540,65 +559,26 @@ export const ApplicationSettings = memo(() => {
         },
         {
             control: (
-                <Switch
-                    defaultChecked={settings.externalLinks}
-                    onChange={(e) => {
+                <SegmentedControl
+                    aria-label={t('setting.sidePlayQueueLayout', { postProcess: 'sentenceCase' })}
+                    data={SIDE_QUEUE_LAYOUT_OPTIONS}
+                    defaultValue={settings.sideQueueLayout}
+                    onChange={(e) =>
                         setSettings({
                             general: {
                                 ...settings,
-                                externalLinks: e.currentTarget.checked,
+                                sideQueueLayout: e as SideQueueLayout,
                             },
-                        });
-                    }}
+                        })
+                    }
                 />
             ),
-            description: t('setting.externalLinks', {
+            description: t('setting.sidePlayQueueLayout', {
                 context: 'description',
                 postProcess: 'sentenceCase',
             }),
-            title: t('setting.externalLinks', { postProcess: 'sentenceCase' }),
-        },
-        {
-            control: (
-                <Switch
-                    defaultChecked={settings.lastFM}
-                    onChange={(e) => {
-                        setSettings({
-                            general: {
-                                ...settings,
-                                lastFM: e.currentTarget.checked,
-                            },
-                        });
-                    }}
-                />
-            ),
-            description: t('setting.lastfm', {
-                context: 'description',
-                postProcess: 'sentenceCase',
-            }),
-            isHidden: !settings.externalLinks,
-            title: t('setting.lastfm', { postProcess: 'sentenceCase' }),
-        },
-        {
-            control: (
-                <Switch
-                    defaultChecked={settings.musicBrainz}
-                    onChange={(e) => {
-                        setSettings({
-                            general: {
-                                ...settings,
-                                musicBrainz: e.currentTarget.checked,
-                            },
-                        });
-                    }}
-                />
-            ),
-            description: t('setting.musicbrainz', {
-                context: 'description',
-                postProcess: 'sentenceCase',
-            }),
-            isHidden: !settings.externalLinks,
-            title: t('setting.musicbrainz', { postProcess: 'sentenceCase' }),
+            isHidden: settings.sideQueueType !== 'sideQueue',
+            title: t('setting.sidePlayQueueLayout', { postProcess: 'sentenceCase' }),
         },
         {
             control: (
@@ -687,6 +667,59 @@ export const ApplicationSettings = memo(() => {
             isHidden: false,
             title: t('setting.playerbarOpenDrawer', { postProcess: 'sentenceCase' }),
         },
+        {
+            control: (
+                <Switch
+                    aria-label={t('setting.autosave', { postProcess: 'sentenceCase' })}
+                    defaultChecked={settings.autoSave.enabled}
+                    onChange={(e) => {
+                        setSettings({
+                            general: {
+                                ...settings,
+                                autoSave: {
+                                    ...settings.autoSave,
+                                    enabled: e.currentTarget.checked,
+                                },
+                            },
+                        });
+                    }}
+                />
+            ),
+            description: t('setting.autosave', {
+                context: 'description',
+                postProcess: 'sentenceCase',
+            }),
+            title: t('setting.autosave', { postProcess: 'sentenceCase' }),
+        },
+        {
+            control: (
+                <NumberInput
+                    min={1}
+                    onBlur={(e) => {
+                        if (!e) return;
+                        const newVal = e.currentTarget.value
+                            ? Math.max(Number(e.currentTarget.value), 1)
+                            : settings.autoSave.count;
+                        setSettings({
+                            general: {
+                                ...settings,
+                                autoSave: {
+                                    ...settings.autoSave,
+                                    count: newVal,
+                                },
+                            },
+                        });
+                    }}
+                    value={settings.autoSave.count}
+                />
+            ),
+            description: t('setting.autosaveCount', {
+                context: 'description',
+                postProcess: 'sentenceCase',
+            }),
+            isHidden: !settings.autoSave.enabled,
+            title: t('setting.autosaveCount', { postProcess: 'sentenceCase' }),
+        },
     ];
 
     return (
@@ -697,6 +730,7 @@ export const ApplicationSettings = memo(() => {
                     <HomeSettings />
                     <ArtistSettings />
                     <ArtistReleaseTypeSettings />
+                    <FullscreenPlayerSettings />
                     <PathSettings />
                 </>
             }

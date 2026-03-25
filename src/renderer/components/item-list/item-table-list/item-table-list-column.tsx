@@ -26,9 +26,11 @@ import styles from './item-table-list-column.module.css';
 
 import i18n from '/@/i18n/i18n';
 import { useItemSelectionState } from '/@/renderer/components/item-list/helpers/item-list-state';
+import { isNoHorizontalPaddingColumn } from '/@/renderer/components/item-list/item-detail-list/utils';
 import { ActionsColumn } from '/@/renderer/components/item-list/item-table-list/columns/actions-column';
 import { AlbumArtistsColumn } from '/@/renderer/components/item-list/item-table-list/columns/album-artists-column';
 import { AlbumColumn } from '/@/renderer/components/item-list/item-table-list/columns/album-column';
+import { AlbumGroupColumn } from '/@/renderer/components/item-list/item-table-list/columns/album-group-column';
 import { ArtistsColumn } from '/@/renderer/components/item-list/item-table-list/columns/artists-column';
 import { ComposerColumn } from '/@/renderer/components/item-list/item-table-list/columns/composer-column';
 import { CountColumn } from '/@/renderer/components/item-list/item-table-list/columns/count-column';
@@ -212,6 +214,11 @@ const ItemTableListColumnBase = (props: ItemTableListColumn) => {
             case TableColumn.SONG_COUNT:
                 return <CountColumn {...props} {...dragProps} controls={controls} type={type} />;
 
+            case TableColumn.ALBUM_GROUP:
+                return (
+                    <AlbumGroupColumn {...props} {...dragProps} controls={controls} type={type} />
+                );
+
             case TableColumn.ARTIST:
                 return <ArtistsColumn {...props} {...dragProps} controls={controls} type={type} />;
 
@@ -361,6 +368,27 @@ export const ItemTableListColumn = memo(ItemTableListColumnBase, (prevProps, nex
 
 const NonMutedColumns = [TableColumn.TITLE, TableColumn.TITLE_ARTIST, TableColumn.TITLE_COMBINED];
 
+export function isAlbumGroupingActive(columns: { id: string; isEnabled?: boolean }[]): boolean {
+    return columns.some((col) => col.id === TableColumn.ALBUM_GROUP && col.isEnabled);
+}
+
+export function isLastInAlbumGroup(
+    rowIndex: number,
+    getRowItem: ((index: number) => unknown) | undefined,
+    enableHeader: boolean | undefined,
+    dataLength: number,
+): boolean {
+    const item = getRowItem?.(rowIndex) as null | undefined | { album?: string };
+    if (!item?.album) return true;
+
+    const nextRowIndex = rowIndex + 1;
+    const maxRow = enableHeader ? dataLength + 1 : dataLength;
+    if (nextRowIndex >= maxRow) return true;
+
+    const nextItem = getRowItem?.(nextRowIndex) as null | undefined | { album?: string };
+    return !nextItem || nextItem.album !== item.album;
+}
+
 export const TableColumnTextContainer = (
     props: ItemTableListColumn & {
         children: React.ReactNode;
@@ -479,6 +507,7 @@ export const TableColumnTextContainer = (
                 [styles.dragging]: isDataRow && isDragging,
                 [styles.large]: props.size === 'large',
                 [styles.left]: props.columns[props.columnIndex].align === 'start',
+                [styles.noHorizontalPadding]: isNoHorizontalPaddingColumn(props.type),
                 [styles.paddingLg]: props.cellPadding === 'lg',
                 [styles.paddingMd]: props.cellPadding === 'md',
                 [styles.paddingSm]: props.cellPadding === 'sm',
@@ -491,7 +520,14 @@ export const TableColumnTextContainer = (
                     props.enableHorizontalBorders &&
                     props.enableHeader &&
                     props.rowIndex > 0 &&
-                    (props.rowIndex === 1 || !isLastRow),
+                    (isAlbumGroupingActive(props.columns)
+                        ? isLastInAlbumGroup(
+                              props.rowIndex,
+                              props.getRowItem,
+                              !!props.enableHeader,
+                              props.data.length,
+                          )
+                        : props.rowIndex === 1 || !isLastRow),
                 [styles.withVerticalBorder]: props.enableVerticalBorders && !isLastColumn,
             })}
             data-row-index={isDataRow ? `${props.tableId}-${props.rowIndex}` : undefined}
@@ -632,19 +668,31 @@ export const TableColumnContainer = (
                 [styles.dragging]: isDataRow && isDragging,
                 [styles.large]: props.size === 'large',
                 [styles.left]: props.columns[props.columnIndex].align === 'start',
+                [styles.noHorizontalPadding]: isNoHorizontalPaddingColumn(props.type),
                 [styles.paddingLg]: props.cellPadding === 'lg',
                 [styles.paddingMd]: props.cellPadding === 'md',
                 [styles.paddingSm]: props.cellPadding === 'sm',
                 [styles.paddingXl]: props.cellPadding === 'xl',
                 [styles.paddingXs]: props.cellPadding === 'xs',
                 [styles.right]: props.columns[props.columnIndex].align === 'end',
-                [styles.rowHoverHighlightEnabled]: isDataRow && props.enableRowHoverHighlight,
-                [styles.rowSelected]: isDataRow && isSelected,
+                [styles.rowHoverHighlightEnabled]:
+                    isDataRow &&
+                    props.enableRowHoverHighlight &&
+                    props.type !== TableColumn.ALBUM_GROUP,
+                [styles.rowSelected]:
+                    isDataRow && isSelected && props.type !== TableColumn.ALBUM_GROUP,
                 [styles.withHorizontalBorder]:
                     props.enableHorizontalBorders &&
                     props.enableHeader &&
                     props.rowIndex > 0 &&
-                    (props.rowIndex === 1 || !isLastRow),
+                    (isAlbumGroupingActive(props.columns)
+                        ? isLastInAlbumGroup(
+                              props.rowIndex,
+                              props.getRowItem,
+                              !!props.enableHeader,
+                              props.data.length,
+                          )
+                        : props.rowIndex === 1 || !isLastRow),
                 [styles.withVerticalBorder]: props.enableVerticalBorders && !isLastColumn,
             })}
             data-row-index={isDataRow ? `${props.tableId}-${props.rowIndex}` : undefined}
@@ -850,6 +898,7 @@ export const TableColumnHeaderContainer = (
                 [styles.headerDraggedOverLeft]: isDraggedOver === 'left',
                 [styles.headerDraggedOverRight]: isDraggedOver === 'right',
                 [styles.headerDragging]: isDragging,
+                [styles.noHorizontalPadding]: isNoHorizontalPaddingColumn(props.type),
                 [styles.paddingLg]: props.cellPadding === 'lg',
                 [styles.paddingMd]: props.cellPadding === 'md',
                 [styles.paddingSm]: props.cellPadding === 'sm',
@@ -881,7 +930,7 @@ export const TableColumnHeaderContainer = (
     );
 };
 
-const columnLabelMap: Record<TableColumn, ReactNode | string> = {
+export const columnLabelMap: Record<TableColumn, ReactNode | string> = {
     [TableColumn.ACTIONS]: (
         <Flex className={styles.headerIconWrapper}>
             <Icon fill="default" icon="ellipsisHorizontal" />
@@ -892,6 +941,9 @@ const columnLabelMap: Record<TableColumn, ReactNode | string> = {
         postProcess: 'upperCase',
     }) as string,
     [TableColumn.ALBUM_COUNT]: i18n.t('table.column.albumCount', {
+        postProcess: 'upperCase',
+    }) as string,
+    [TableColumn.ALBUM_GROUP]: i18n.t('table.config.label.albumGroup', {
         postProcess: 'upperCase',
     }) as string,
     [TableColumn.ARTIST]: i18n.t('table.column.artist', { postProcess: 'upperCase' }) as string,

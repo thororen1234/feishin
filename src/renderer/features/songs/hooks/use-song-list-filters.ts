@@ -28,11 +28,6 @@ export const useSongListFilters = (listKey?: ItemListKey) => {
 
     const [searchParams, setSearchParams] = useSearchParams();
 
-    const albumIds = useMemo(
-        () => parseArrayParam(searchParams, FILTER_KEYS.SONG.ALBUM_IDS),
-        [searchParams],
-    );
-
     const genreId = useMemo(
         () => parseArrayParam(searchParams, FILTER_KEYS.SONG.GENRE_ID),
         [searchParams],
@@ -58,18 +53,14 @@ export const useSongListFilters = (listKey?: ItemListKey) => {
         [searchParams],
     );
 
-    const custom = useMemo(
-        () => parseCustomFiltersParam(searchParams, FILTER_KEYS.SONG._CUSTOM),
+    const hasRating = useMemo(
+        () => parseBooleanParam(searchParams, FILTER_KEYS.SONG.HAS_RATING),
         [searchParams],
     );
 
-    const setAlbumIds = useCallback(
-        (value: null | string[]) => {
-            setSearchParams((prev) => setSearchParam(prev, FILTER_KEYS.SONG.ALBUM_IDS, value), {
-                replace: true,
-            });
-        },
-        [setSearchParams],
+    const custom = useMemo(
+        () => parseCustomFiltersParam(searchParams, FILTER_KEYS.SONG._CUSTOM),
+        [searchParams],
     );
 
     const setGenreId = useCallback(
@@ -117,6 +108,15 @@ export const useSongListFilters = (listKey?: ItemListKey) => {
         [setSearchParams],
     );
 
+    const setHasRating = useCallback(
+        (value: boolean | null) => {
+            setSearchParams((prev) => setSearchParam(prev, FILTER_KEYS.SONG.HAS_RATING, value), {
+                replace: true,
+            });
+        },
+        [setSearchParams],
+    );
+
     const setCustom = useCallback(
         (
             value:
@@ -153,10 +153,10 @@ export const useSongListFilters = (listKey?: ItemListKey) => {
                     {
                         [FILTER_KEYS.SHARED.SEARCH_TERM]: null,
                         [FILTER_KEYS.SONG._CUSTOM]: null,
-                        [FILTER_KEYS.SONG.ALBUM_IDS]: null,
                         [FILTER_KEYS.SONG.ARTIST_IDS]: null,
                         [FILTER_KEYS.SONG.FAVORITE]: null,
                         [FILTER_KEYS.SONG.GENRE_ID]: null,
+                        [FILTER_KEYS.SONG.HAS_RATING]: null,
                         [FILTER_KEYS.SONG.MAX_YEAR]: null,
                         [FILTER_KEYS.SONG.MIN_YEAR]: null,
                     },
@@ -172,10 +172,10 @@ export const useSongListFilters = (listKey?: ItemListKey) => {
             [FILTER_KEYS.SHARED.SORT_BY]: sortBy ?? undefined,
             [FILTER_KEYS.SHARED.SORT_ORDER]: sortOrder ?? undefined,
             [FILTER_KEYS.SONG._CUSTOM]: custom ?? undefined,
-            [FILTER_KEYS.SONG.ALBUM_IDS]: albumIds ?? undefined,
             [FILTER_KEYS.SONG.ARTIST_IDS]: artistIds ?? undefined,
             [FILTER_KEYS.SONG.FAVORITE]: favorite ?? undefined,
             [FILTER_KEYS.SONG.GENRE_ID]: genreId ?? undefined,
+            [FILTER_KEYS.SONG.HAS_RATING]: hasRating ?? undefined,
             [FILTER_KEYS.SONG.MAX_YEAR]: maxYear ?? undefined,
             [FILTER_KEYS.SONG.MIN_YEAR]: minYear ?? undefined,
         }),
@@ -184,10 +184,10 @@ export const useSongListFilters = (listKey?: ItemListKey) => {
             sortBy,
             sortOrder,
             custom,
-            albumIds,
             artistIds,
             favorite,
             genreId,
+            hasRating,
             maxYear,
             minYear,
         ],
@@ -196,11 +196,11 @@ export const useSongListFilters = (listKey?: ItemListKey) => {
     return {
         clear,
         query,
-        setAlbumIds,
         setArtistIds,
         setCustom,
         setFavorite,
         setGenreId,
+        setHasRating,
         setMaxYear,
         setMinYear,
         setSearchTerm,

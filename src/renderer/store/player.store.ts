@@ -67,6 +67,7 @@ interface Actions {
     moveSelectedToTop: (items: QueueSong[]) => void;
     setCrossfadeDuration: (duration: number) => void;
     setCrossfadeStyle: (style: CrossfadeStyle) => void;
+    setPauseOnNextSongEnd: (value: boolean) => void;
     setQueue: (data: Song[], index?: number, position?: number) => void;
     setRepeat: (repeat: PlayerRepeat) => void;
     setShuffle: (shuffle: PlayerShuffle) => void;
@@ -91,6 +92,7 @@ interface State {
         crossfadeStyle: CrossfadeStyle;
         index: number;
         muted: boolean;
+        pauseOnNextSongEnd: boolean;
         playerNum: 1 | 2;
         repeat: PlayerRepeat;
         seekToTimestamp: string;
@@ -295,6 +297,7 @@ const initialState: State = {
         crossfadeStyle: CrossfadeStyle.EQUAL_POWER,
         index: -1,
         muted: false,
+        pauseOnNextSongEnd: false,
         playerNum: 1,
         repeat: PlayerRepeat.NONE,
         seekToTimestamp: uniqueSeekToTimestamp(0),
@@ -865,42 +868,95 @@ export const usePlayerStoreBase = createWithEqualityFn<PlayerState>()(
                     return currentIndex === queue.items.length - 1;
                 },
                 mediaAutoNext: () => {
-                    const currentIndex = get().player.index;
-                    const player = get().player;
+                    const stateSnapshot = get();
+                    const currentIndex = stateSnapshot.player.index;
+                    const player = stateSnapshot.player;
                     const repeat = player.repeat;
-                    const queue = get().getQueueOrder();
+                    const queue = stateSnapshot.getQueueOrder();
+                    const isShuffle = isShuffleEnabled(stateSnapshot);
+
+                    const playbackLength = isShuffle
+                        ? stateSnapshot.queue.shuffled.length
+                        : queue.items.length;
 
                     const newPlayerNum = player.playerNum === 1 ? 2 : 1;
-                    const { nextIndex, shouldPause } = calculateNextIndex(
+                    const { nextIndex: nextPlaybackIndex, shouldPause } = calculateNextIndex(
                         currentIndex,
-                        queue.items.length,
+                        playbackLength,
                         repeat,
                     );
-                    const newStatus = shouldPause ? PlayerStatus.PAUSED : PlayerStatus.PLAYING;
+                    const pauseOnNext = player.pauseOnNextSongEnd;
+                    const newStatus =
+                        shouldPause || pauseOnNext ? PlayerStatus.PAUSED : PlayerStatus.PLAYING;
 
                     set((state) => {
-                        state.player.index = nextIndex;
+                        state.player.index = nextPlaybackIndex;
                         state.player.playerNum = newPlayerNum;
                         setTimestampStore(0);
                         state.player.status = newStatus;
+
+                        if (pauseOnNext) {
+                            state.player.pauseOnNextSongEnd = false;
+                        }
                     });
 
-                    if (repeat === PlayerRepeat.ONE && nextIndex === currentIndex) {
+                    if (repeat === PlayerRepeat.ONE && nextPlaybackIndex === currentIndex) {
                         eventEmitter.emit('PLAYER_REPEATED', {
-                            index: nextIndex,
+                            index: nextPlaybackIndex,
                         });
                     }
 
-                    const nextSong = calculateNextSong(nextIndex, queue.items, repeat);
+                    // Compute current/next/previous using the same shuffle-aware mapping as getPlayerData().
+                    let currentQueueIndex = nextPlaybackIndex;
+                    if (isShuffle) {
+                        currentQueueIndex = mapShuffledToQueueIndex(
+                            nextPlaybackIndex,
+                            stateSnapshot.queue.shuffled,
+                        );
+                    }
+
+                    const currentSong = queue.items[currentQueueIndex];
+
+                    let nextSong: QueueSong | undefined;
+                    if (isShuffle) {
+                        const nextShuffledIndex = nextPlaybackIndex + 1;
+                        if (nextShuffledIndex < stateSnapshot.queue.shuffled.length) {
+                            const nextQueueIndex = stateSnapshot.queue.shuffled[nextShuffledIndex];
+                            nextSong = queue.items[nextQueueIndex];
+                        } else if (repeat === PlayerRepeat.ALL) {
+                            const firstQueueIndex = stateSnapshot.queue.shuffled[0];
+                            nextSong = queue.items[firstQueueIndex];
+                        } else if (repeat === PlayerRepeat.ONE) {
+                            nextSong = currentSong;
+                        }
+                    } else {
+                        nextSong = calculateNextSong(currentQueueIndex, queue.items, repeat);
+                    }
+
+                    let previousSong: QueueSong | undefined;
+                    if (isShuffle) {
+                        const prevShuffledIndex = nextPlaybackIndex - 1;
+                        if (prevShuffledIndex >= 0) {
+                            const prevQueueIndex = stateSnapshot.queue.shuffled[prevShuffledIndex];
+                            previousSong = queue.items[prevQueueIndex];
+                        } else if (repeat === PlayerRepeat.ALL) {
+                            const lastShuffledIndex = stateSnapshot.queue.shuffled.length - 1;
+                            const lastQueueIndex = stateSnapshot.queue.shuffled[lastShuffledIndex];
+                            previousSong = queue.items[lastQueueIndex];
+                        }
+                    } else {
+                        previousSong =
+                            currentQueueIndex > 0 ? queue.items[currentQueueIndex - 1] : undefined;
+                    }
 
                     return {
-                        currentSong: queue.items[nextIndex],
-                        index: nextIndex,
+                        currentSong,
+                        index: currentQueueIndex,
                         nextSong,
                         num: newPlayerNum,
-                        player1: newPlayerNum === 1 ? queue.items[nextIndex] : nextSong,
-                        player2: newPlayerNum === 2 ? queue.items[nextIndex] : nextSong,
-                        previousSong: queue.items[nextIndex - 1],
+                        player1: newPlayerNum === 1 ? currentSong : nextSong,
+                        player2: newPlayerNum === 2 ? currentSong : nextSong,
+                        previousSong,
                         queueLength: queue.items.length,
                         status: newStatus,
                     };
@@ -1191,14 +1247,24 @@ export const usePlayerStoreBase = createWithEqualityFn<PlayerState>()(
                         });
 
                         const currentIndex = state.player.index;
-                        const filtered = state.queue.default.filter(
-                            (id) => !uniqueIds.includes(id),
-                        );
+                        let beforeCurrent = 0;
+                        const filtered = state.queue.default.filter((id, idx) => {
+                            const shouldMove = uniqueIds.includes(id);
+                            if (shouldMove && idx < currentIndex) {
+                                beforeCurrent++;
+                            }
+
+                            return !shouldMove;
+                        });
+
+                        // For every item that is before the current item, subtract one as
+                        // these items will shift the queue up
+                        const insertIndex = currentIndex + 1 - beforeCurrent;
 
                         const newQueue = [
-                            ...filtered.slice(0, currentIndex + 1),
+                            ...filtered.slice(0, insertIndex),
                             ...uniqueIds,
-                            ...filtered.slice(currentIndex + 1),
+                            ...filtered.slice(insertIndex),
                         ];
 
                         recalculatePlayerIndex(state, newQueue);
@@ -1256,6 +1322,11 @@ export const usePlayerStoreBase = createWithEqualityFn<PlayerState>()(
                 setCrossfadeStyle: (style: CrossfadeStyle) => {
                     set((state) => {
                         state.player.crossfadeStyle = style;
+                    });
+                },
+                setPauseOnNextSongEnd: (value: boolean) => {
+                    set((state) => {
+                        state.player.pauseOnNextSongEnd = value;
                     });
                 },
                 setRepeat: (repeat: PlayerRepeat) => {
@@ -1576,6 +1647,7 @@ export const usePlayerActions = () => {
             moveSelectedToTop: state.moveSelectedToTop,
             setCrossfadeDuration: state.setCrossfadeDuration,
             setCrossfadeStyle: state.setCrossfadeStyle,
+            setPauseOnNextSongEnd: state.setPauseOnNextSongEnd,
             setQueue: state.setQueue,
             setRepeat: state.setRepeat,
             setShuffle: state.setShuffle,

@@ -114,6 +114,7 @@ export const SidebarPlayQueue = () => {
                     <PlayQueueListControls
                         handleSearch={setSearch}
                         searchTerm={search}
+                        tableRef={tableRef}
                         type={ItemListKey.SIDE_QUEUE}
                     />
                     <div className={styles.playQueueSection}>
@@ -217,6 +218,7 @@ export const SidebarPlayQueue = () => {
                     <PlayQueueListControls
                         handleSearch={setSearch}
                         searchTerm={search}
+                        tableRef={tableRef}
                         type={ItemListKey.SIDE_QUEUE}
                     />
                     <Flex direction="column" style={{ flex: 1, minHeight: 0 }}>
@@ -395,10 +397,12 @@ const CombinedLyricsAndVisualizerPanel = () => {
             return lyricsData.length > 0 && !!lyricsData[0]?.lyrics;
         }
 
-        const lyrics = lyricsData?.lyrics;
+        const lyrics = lyricsData.selected?.lyrics;
+
         if (Array.isArray(lyrics)) {
             return lyrics.length > 0;
         }
+
         if (typeof lyrics === 'string') {
             return lyrics.trim().length > 0;
         }

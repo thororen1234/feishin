@@ -21,7 +21,10 @@ import {
     useIsRadioActive,
     useRadioPlayer,
 } from '/@/renderer/features/radio/hooks/use-radio-player';
-import { ListConfigMenu } from '/@/renderer/features/shared/components/list-config-menu';
+import {
+    ListConfigMenu,
+    SONG_DISPLAY_TYPES,
+} from '/@/renderer/features/shared/components/list-config-menu';
 import { useFastAverageColor } from '/@/renderer/hooks';
 import {
     useFullScreenPlayerStore,
@@ -552,14 +555,16 @@ const Controls = () => {
                             />
                         </Option.Control>
                     </Option>
-                    <Divider my="sm" />
                 </Popover.Dropdown>
             </Popover>
             <ListConfigMenu
                 buttonProps={{
                     variant: 'subtle',
                 }}
-                displayTypes={[{ hidden: true, value: ListDisplayType.GRID }]}
+                displayTypes={[
+                    { hidden: true, value: ListDisplayType.GRID },
+                    ...SONG_DISPLAY_TYPES,
+                ]}
                 listKey={ItemListKey.FULL_SCREEN}
                 optionsConfig={{
                     table: {

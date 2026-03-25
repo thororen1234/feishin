@@ -1,6 +1,6 @@
 import { closeAllModals, openModal } from '@mantine/modals';
 import clsx from 'clsx';
-import { forwardRef, ReactNode, Ref, useCallback, useState } from 'react';
+import { forwardRef, ReactNode, Ref, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
@@ -18,6 +18,7 @@ import { usePlayButtonClick } from '/@/renderer/features/shared/hooks/use-play-b
 import { useIsMutatingCreateFavorite } from '/@/renderer/features/shared/mutations/create-favorite-mutation';
 import { useIsMutatingDeleteFavorite } from '/@/renderer/features/shared/mutations/delete-favorite-mutation';
 import { useIsMutatingRating } from '/@/renderer/features/shared/mutations/set-rating-mutation';
+import { useGeneralSettings } from '/@/renderer/store';
 import { ActionIcon } from '/@/shared/components/action-icon/action-icon';
 import { Button } from '/@/shared/components/button/button';
 import { Center } from '/@/shared/components/center/center';
@@ -32,6 +33,7 @@ import { Play } from '/@/shared/types/types';
 
 interface LibraryHeaderProps {
     children?: ReactNode;
+    compact?: boolean;
     containerClassName?: string;
     imagePlaceholderUrl?: null | string;
     imageUrl?: null | string;
@@ -45,19 +47,24 @@ interface LibraryHeaderProps {
     };
     loading?: boolean;
     title: string;
+    topRight?: ReactNode;
 }
 
 export const LibraryHeader = forwardRef(
     (
-        { children, containerClassName, imageUrl, item, title }: LibraryHeaderProps,
+        {
+            children,
+            compact,
+            containerClassName,
+            imageUrl,
+            item,
+            title,
+            topRight,
+        }: LibraryHeaderProps,
         ref: Ref<HTMLDivElement>,
     ) => {
         const { t } = useTranslation();
-        const [isImageError, setIsImageError] = useState<boolean | null>(false);
-
-        const onImageError = () => {
-            setIsImageError(true);
-        };
+        const { blurExplicitImages } = useGeneralSettings();
 
         const itemTypeString = (): string => {
             switch (item.type) {
@@ -109,7 +116,10 @@ export const LibraryHeader = forwardRef(
                             enableDebounce={false}
                             enableViewport={false}
                             fetchPriority="high"
-                            isExplicit={item.explicitStatus === ExplicitStatus.EXPLICIT}
+                            isExplicit={
+                                blurExplicitImages &&
+                                item.explicitStatus === ExplicitStatus.EXPLICIT
+                            }
                             src={imageUrl}
                             style={{
                                 maxHeight: '100%',
@@ -122,10 +132,18 @@ export const LibraryHeader = forwardRef(
                 ),
                 fullScreen: true,
             });
-        }, [item.explicitStatus, item.imageId, item.type]);
+        }, [blurExplicitImages, item.explicitStatus, item.imageId, item.type]);
 
         return (
-            <div className={clsx(styles.libraryHeader, containerClassName)} ref={ref}>
+            <div
+                className={clsx(
+                    styles.libraryHeader,
+                    containerClassName,
+                    compact && styles.compact,
+                )}
+                ref={ref}
+            >
+                {topRight && <div className={styles.topRight}>{topRight}</div>}
                 <div
                     className={styles.imageSection}
                     onClick={() => {
@@ -138,21 +156,18 @@ export const LibraryHeader = forwardRef(
                     style={{ cursor: 'pointer' }}
                     tabIndex={0}
                 >
-                    {!isImageError && (
-                        <ItemImage
-                            className={styles.image}
-                            containerClassName={styles.image}
-                            enableDebounce={false}
-                            enableViewport={false}
-                            explicitStatus={item.explicitStatus ?? null}
-                            fetchPriority="high"
-                            id={item.imageId}
-                            itemType={item.type as LibraryItem}
-                            onError={onImageError}
-                            src={imageUrl || ''}
-                            type="header"
-                        />
-                    )}
+                    <ItemImage
+                        className={styles.image}
+                        containerClassName={styles.image}
+                        enableDebounce={false}
+                        enableViewport={false}
+                        explicitStatus={item.explicitStatus ?? null}
+                        fetchPriority="high"
+                        id={item.imageId}
+                        itemType={item.type as LibraryItem}
+                        src={imageUrl || ''}
+                        type="header"
+                    />
                 </div>
                 {title && (
                     <div className={styles.metadataSection}>
@@ -264,6 +279,7 @@ export const calculateTitleSize = (title: string) => {
 
 interface LibraryHeaderMenuProps {
     favorite?: boolean;
+    onAlbumRadio?: () => void;
     onArtistRadio?: () => void;
     onFavorite?: (e: React.MouseEvent<HTMLButtonElement>) => void;
     onMore?: (e: React.MouseEvent<HTMLButtonElement>) => void;
@@ -275,6 +291,7 @@ interface LibraryHeaderMenuProps {
 
 export const LibraryHeaderMenu = ({
     favorite,
+    onAlbumRadio,
     onArtistRadio,
     onFavorite,
     onMore,
@@ -326,8 +343,26 @@ export const LibraryHeaderMenu = ({
                 {onPlay && (
                     <PlayLastTextButton {...handlePlayLast.handlers} {...handlePlayLast.props} />
                 )}
+                {onAlbumRadio && (
+                    <Button
+                        disabled={isPlayerFetching}
+                        leftSection={
+                            isPlayerFetching ? (
+                                <Spinner color="white" />
+                            ) : (
+                                <Icon icon="radio" size="lg" />
+                            )
+                        }
+                        onClick={onAlbumRadio}
+                        size="md"
+                        variant="transparent"
+                    >
+                        {t('player.albumRadio', { postProcess: 'sentenceCase' })}
+                    </Button>
+                )}
                 {onArtistRadio && (
                     <Button
+                        disabled={isPlayerFetching}
                         leftSection={
                             isPlayerFetching ? (
                                 <Spinner color="white" />

@@ -1,7 +1,74 @@
 import { nanoid } from 'nanoid/non-secure';
 
 import { NDSongQueryFields } from '/@/shared/api/navidrome/navidrome-types';
+import { Album, LibraryItem, Song } from '/@/shared/types/domain-types';
 import { QueryBuilderGroup } from '/@/shared/types/types';
+
+export type PlaylistAlbumRow = Album & { _playlistSongs?: Song[] };
+
+export function playlistSongsToAlbums(songs: Song[]): PlaylistAlbumRow[] {
+    if (songs.length === 0) return [];
+
+    const rows: PlaylistAlbumRow[] = [];
+    let group: Song[] = [songs[0]];
+    let prevAlbumId = songs[0].albumId;
+
+    const pushRow = (song: Song, groupSongs: Song[]) => {
+        rows.push({
+            _itemType: LibraryItem.ALBUM,
+            _playlistSongs: groupSongs,
+            _serverId: song._serverId,
+            _serverType: song._serverType,
+            albumArtistName: song.albumArtistName,
+            albumArtists: song.albumArtists,
+            artists: song.artists,
+            comment: song.comment,
+            createdAt: song.createdAt,
+            duration: null,
+            explicitStatus: song.explicitStatus,
+            genres: song.genres,
+            id: song.albumId,
+            imageId: song.imageId,
+            imageUrl: song.imageUrl,
+            isCompilation: song.compilation,
+            lastPlayedAt: song.lastPlayedAt,
+            mbzId: null,
+            mbzReleaseGroupId: null,
+            name: song.album ?? '',
+            originalDate: null,
+            originalYear: null,
+            participants: song.participants,
+            playCount: null,
+            recordLabels: [],
+            releaseDate: song.releaseDate,
+            releaseType: null,
+            releaseTypes: [],
+            releaseYear: song.releaseYear,
+            size: null,
+            songCount: null,
+            sortName: song.album ?? '',
+            tags: song.tags,
+            updatedAt: song.updatedAt,
+            userFavorite: false,
+            userRating: null,
+            version: null,
+        });
+    };
+
+    for (let i = 1; i < songs.length; i++) {
+        const song = songs[i];
+        if (song.albumId === prevAlbumId) {
+            group.push(song);
+        } else {
+            pushRow(group[0], group);
+            group = [song];
+            prevAlbumId = song.albumId;
+        }
+    }
+    pushRow(group[0], group);
+
+    return rows;
+}
 
 export const parseQueryBuilderChildren = (groups: QueryBuilderGroup[], data: any[]) => {
     if (groups.length === 0) {
@@ -19,17 +86,8 @@ export const parseQueryBuilderChildren = (groups: QueryBuilderGroup[], data: any
         for (const rule of group.rules) {
             if (rule.field && rule.operator) {
                 const [table, field] = rule.field.split('.');
-                let operator = rule.operator;
+                const operator = mapDatePickerOperatorToApi(rule.operator);
                 const value = field !== 'releaseDate' ? rule.value : new Date(rule.value);
-
-                // Transform date picker operators back to original operators
-                if (operator === 'beforeDate') {
-                    operator = 'before';
-                } else if (operator === 'afterDate') {
-                    operator = 'after';
-                } else if (operator === 'inTheRangeDate') {
-                    operator = 'inTheRange';
-                }
 
                 switch (table) {
                     default:
@@ -65,7 +123,7 @@ export const convertQueryGroupToNDQuery = (filter: QueryBuilderGroup) => {
     for (const rule of filter.rules) {
         if (rule.field && rule.operator) {
             const [field] = rule.field.split('.');
-            let operator = rule.operator;
+            const operator = mapDatePickerOperatorToApi(rule.operator);
             let value = rule.value;
 
             const booleanFields = NDSongQueryFields.filter(
@@ -75,14 +133,6 @@ export const convertQueryGroupToNDQuery = (filter: QueryBuilderGroup) => {
             // Convert string values to boolean
             if (booleanFields.includes(field)) {
                 value = value === 'true';
-            }
-
-            if (operator === 'beforeDate') {
-                operator = 'before';
-            } else if (operator === 'afterDate') {
-                operator = 'after';
-            } else if (operator === 'inTheRangeDate') {
-                operator = 'inTheRange';
             }
 
             switch (field) {
@@ -133,19 +183,8 @@ export const convertNDQueryToQueryGroup = (query: Record<string, any>) => {
                 value = value.toString();
             }
 
-            const dateFields = NDSongQueryFields.filter(
-                (queryField) => queryField.type === 'date' || queryField.type === 'dateRange',
-            ).map((field) => field.value);
-
-            if (dateFields.includes(field)) {
-                if (operator === 'before') {
-                    operator = 'beforeDate';
-                } else if (operator === 'after') {
-                    operator = 'afterDate';
-                } else if (operator === 'inTheRange') {
-                    operator = 'inTheRangeDate';
-                }
-            }
+            // Use date-picker operator in UI when value is date-like (e.g. YYYY-MM-DD); otherwise keep API operator
+            operator = mapApiOperatorToDatePicker(operator, value);
 
             rootGroup.rules.push({
                 field,
@@ -158,3 +197,31 @@ export const convertNDQueryToQueryGroup = (query: Record<string, any>) => {
 
     return rootGroup;
 };
+
+const DATE_STRING_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+function isDateLikeValue(value: unknown): boolean {
+    if (value instanceof Date) return true;
+    if (typeof value === 'string') return DATE_STRING_REGEX.test(value.trim());
+    return false;
+}
+
+function isDateRangeValue(value: unknown): value is [null | string, null | string] {
+    if (!Array.isArray(value) || value.length !== 2) return false;
+    const [a, b] = value;
+    return (a == null || isDateLikeValue(a)) && (b == null || isDateLikeValue(b));
+}
+
+function mapApiOperatorToDatePicker(operator: string, value: unknown): string {
+    if (operator === 'before' && isDateLikeValue(value)) return 'beforeDate';
+    if (operator === 'after' && isDateLikeValue(value)) return 'afterDate';
+    if (operator === 'inTheRange' && isDateRangeValue(value)) return 'inTheRangeDate';
+    return operator;
+}
+
+function mapDatePickerOperatorToApi(operator: string): string {
+    if (operator === 'beforeDate') return 'before';
+    if (operator === 'afterDate') return 'after';
+    if (operator === 'inTheRangeDate') return 'inTheRange';
+    return operator;
+}

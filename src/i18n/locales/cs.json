@@ -38,7 +38,17 @@
         "restoreQueueFromServer": "obnovit frontu ze serveru",
         "saveQueueToServer": "uložit frontu na server",
         "artistRadio": "rádio umělce",
-        "trackRadio": "rádio skladby"
+        "trackRadio": "rádio skladby",
+        "sleepTimer": "časovač spánku",
+        "sleepTimer_endOfSong": "konec aktuální skladby",
+        "sleepTimer_minutes": "{{count}} min.",
+        "sleepTimer_hours": "{{count}} hod.",
+        "sleepTimer_custom": "vlastní",
+        "sleepTimer_off": "vypnuto",
+        "sleepTimer_timeRemaining": "zbývá {{time}}",
+        "sleepTimer_setCustom": "nastavit časovač",
+        "sleepTimer_cancel": "zrušit časovač",
+        "albumRadio": "rádio alba"
     },
     "setting": {
         "crossfadeStyle_description": "vyberte způsob prolnutí u přehrávače zvuku",
@@ -46,7 +56,7 @@
         "hotkey_skipBackward": "přeskočení zpět",
         "replayGainMode_description": "úprava zesílení hlasitosti podle hodnot {{ReplayGain}} uložených v metadatech souborů",
         "volumeWheelStep_description": "počet procent, o které má být hlasitost posunuta při přejetí kolečkem myši na posuvníku hlasitosti",
-        "audioDevice_description": "vyberte zvukové zařízení k přehrávání (pouze webový přehrávač)",
+        "audioDevice_description": "vyberte zvukové zařízení k přehrávání",
         "theme_description": "nastavení motivu použitého v aplikaci",
         "hotkey_playbackPause": "pozastavení",
         "replayGainFallback": "fallback {{ReplayGain}}",
@@ -98,7 +108,6 @@
         "hotkey_globalSearch": "globální vyhledávání",
         "gaplessAudio_description": "nastavení přehrávače mpv pro přehrávání bez mezer",
         "remoteUsername_description": "nastavení uživatelského jména pro server vzdáleného ovládání. pokud je jméno i heslo prázdné, bude autentifikace zakázána",
-        "disableAutomaticUpdates": "vypnout automatické aktualizace",
         "exitToTray_description": "ukončit aplikaci do systémové lišty",
         "followLyric_description": "přesouvat texty s aktuální pozicí přehrávání",
         "hotkey_favoritePreviousSong": "oblíbit $t(common.previousSong)",
@@ -262,7 +271,7 @@
         "neteaseTranslation_description": "Pokud je povoleno, načte a zobrazí přeložené texty ze služby NetEase, pokud jsou dostupné",
         "preferLocalLyrics": "preferovat místní texty",
         "preferLocalLyrics_description": "preferovat místní texty před vzdálenými, pokud jsou dostupné",
-        "discordPausedStatus": "zobrazit rich presence při pozastavení",
+        "discordPausedStatus": "zobrazit stav při pozastavení",
         "discordPausedStatus_description": "pokud je povoleno, bude při pozastavení přehrávače zobrazen stav",
         "preservePitch": "zachovat výšku",
         "preservePitch_description": "zachová výšku při úpravě rychlosti přehrávání",
@@ -284,7 +293,7 @@
         "releaseChannel_optionLatest": "nejnovější",
         "releaseChannel_optionBeta": "beta",
         "releaseChannel": "kanál vydání",
-        "releaseChannel_description": "vyberte si mezi stabilními vydáními nebo beta vydáními pro automatické aktualizace",
+        "releaseChannel_description": "vyberte si mezi stabilními, beta nebo alpha (nočními) vydáními pro automatické aktualizace",
         "mediaSession": "povolit relaci médií",
         "mediaSession_description": "povolí integraci do služby Media Session, což zobrazí ovládání a metadata médií v překrytí systémové hlasitosti a na zamykací obrazovce",
         "exportImportSettings_control_description": "exportovat a importovat nastavení pomocí souboru JSON",
@@ -380,7 +389,41 @@
         "enableGridMultiSelect": "povolit vícenásobný výběr v mřížce",
         "enableGridMultiSelect_description": "pokud je povoleno, umožňuje vybrat několik položek v zobrazení mřížky. pokud je zakázáno, kliknutím na obrázek položky mřížky přejdete na stránku položky",
         "sidebarPlaylistSorting_description": "umožňuje ruční řazení seznamů skladeb v postranní liště pomocí přetažení namísto výchozího pořadí serveru",
-        "sidebarPlaylistSorting": "řazení seznamů skladeb v postranní liště"
+        "sidebarPlaylistSorting": "řazení seznamů skladeb v postranní liště",
+        "blurExplicitImages": "rozostřit explicitní obrázky",
+        "blurExplicitImages_description": "obaly alb a skladeb označené jako explicitní budou rozostřeny",
+        "sidebarPlaylistListFilterRegex_description": "v postranní liště skrýt seznamy skladeb, které odpovídají tomuto regulárnímu výrazu",
+        "sidebarPlaylistListFilterRegex_placeholder": "např. ^Denní mix.*",
+        "sidebarPlaylistListFilterRegex": "regulární výraz filtru seznamů skladeb",
+        "releaseChannel_optionAlpha": "alpha (noční)",
+        "analyticsEnable": "Posílat analytiku založenou na využití",
+        "analyticsEnable_description": "Anonymizovaná data o používání jsou odesílána vývojáři za účelem zlepšení aplikace",
+        "automaticUpdates": "Automatické aktualizace",
+        "automaticUpdates_description": "Kontrolovat a automaticky instalovat aktualizace",
+        "discordStateIcon": "zobrazit ikonu přehrávání",
+        "discordStateIcon_description": "zobrazit malou ikonu přehrávání ve stavu na Discordu. ikona pozastavení bude zobrazena vždy, když je povolena možnost „Zobrazit stav při pozastavení“",
+        "useThemePrimaryShade": "použít primární odstín motivu",
+        "useThemePrimaryShade_description": "použít primární odstín definovaný ve zvoleném motivu pro primární varianty barev",
+        "primaryShade": "primární odstín",
+        "primaryShade_description": "přepsat primární odstín (0–9) používaný pro tlačítka, odkazy a další prvky obarvené primární barvou",
+        "playerItemConfiguration_description": "nastavit, které položky budou zobrazeny a v jakém pořadí, v celoobrazovkovém přehrávači",
+        "playerItemConfiguration": "nastavení položek přehrávače",
+        "autosave": "automaticky ukládat frontu přehrávání",
+        "autosave_description": "zapnout automatické ukládání fronty přehrávání na server. toto je možné pouze při použití Navidrome/Subsonic a není možné mít kombinovanou frontu přehrávání.",
+        "autosaveCount": "četnost automatického ukládání fronty přehrávání",
+        "autosaveCount_description": "kolik změn skladeb se může provést před uložením fronty. 1 (minimum) znamená při každé změně skladby",
+        "spotify_description": "na stránkách umělců a alb zobrazit odkazy na Spotify",
+        "spotify": "zobrazit odkazy na Spotify",
+        "nativeSpotify_description": "otevřít v aplikaci Spotify namísto vašeho prohlížeče",
+        "nativeSpotify": "použít aplikaci Spotify",
+        "listenbrainz_description": "na stránkách umělců a alb zobrazit odkazy na ListenBrainz",
+        "listenbrainz": "zobrazit odkazy na ListenBrainz",
+        "qobuz_description": "na stránkách umělců a alb zobrazit odkazy na Qobuz",
+        "qobuz": "zobrazit odkazy na Qobuz",
+        "sidePlayQueueLayout": "rozložení postranní fronty přehrávání",
+        "sidePlayQueueLayout_description": "nastaví rozložení postranní lišty přehrávání",
+        "sidePlayQueueLayout_optionHorizontal": "na šířku",
+        "sidePlayQueueLayout_optionVertical": "na výšku"
     },
     "action": {
         "editPlaylist": "upravit $t(entity.playlist, {\"count\": 1})",
@@ -402,7 +445,10 @@
         "removeFromFavorites": "odebrat z $t(entity.favorite, {\"count\": 2})",
         "openIn": {
             "lastfm": "Otevřít v Last.fm",
-            "musicbrainz": "Otevřít v MusicBrainz"
+            "musicbrainz": "Otevřít v MusicBrainz",
+            "spotify": "Otevřít na Spotify",
+            "listenbrainz": "Otevřít ve službě ListenBrainz",
+            "qobuz": "Otevřít ve službě Qobuz"
         },
         "moveToNext": "přesunout na další",
         "downloadStarted": "spuštěno stahování {{count}} položek",
@@ -420,7 +466,8 @@
         "openApplicationDirectory": "otevřít adresář aplikace",
         "addOrRemoveFromSelection": "přidat nebo odebrat z výběru",
         "selectRangeOfItems": "vyberte rozsah položek",
-        "selectAll": "vybrat vše"
+        "selectAll": "vybrat vše",
+        "goToCurrent": "přejít na aktuální položku"
     },
     "common": {
         "backward": "zpátky",
@@ -546,14 +593,17 @@
         "example": "příklad",
         "filter_single": "jeden",
         "filter_multiple": "několik",
-        "rename": "přejmenovat"
+        "rename": "přejmenovat",
+        "newVersionAvailable": "je dostupná nová verze",
+        "numberOfResults": "{{numberOfResults}} výsledků"
     },
     "table": {
         "config": {
             "view": {
                 "table": "tabulka",
                 "list": "seznam",
-                "grid": "mřížka"
+                "grid": "mřížka",
+                "detail": "podrobnosti"
             },
             "general": {
                 "displayType": "typ zobrazení",
@@ -622,7 +672,8 @@
                 "bitDepth": "$t(common.bitDepth)",
                 "sampleRate": "$t(common.sampleRate)",
                 "composer": "skladatel",
-                "titleArtist": "$t(common.title) (umělec)"
+                "titleArtist": "$t(common.title) (umělec)",
+                "albumGroup": "skupina alb"
             }
         },
         "column": {
@@ -684,7 +735,10 @@
         "saveQueueFailed": "nepodařilo se uložit frontu",
         "settingsSyncError": "byly zjištěny nesrovnalosti mezi nastavením v rendereru a hlavním procesem. restartujte aplikaci, aby se změny projevily",
         "noNetwork": "server je nedostupný",
-        "noNetworkDescription": "k tomuto serveru se nepodařilo připojit"
+        "noNetworkDescription": "k tomuto serveru se nepodařilo připojit",
+        "invalidJson": "neplatný JSON",
+        "serverLockSingleServer": "při uzamčení serveru je povolen pouze jeden server",
+        "playbackPausedDueToError": "přehrávání bylo pozastaveno z důvodu chyby"
     },
     "filter": {
         "mostPlayed": "nejvíce přehráváno",
@@ -730,7 +784,9 @@
         "album": "$t(entity.album, {\"count\": 1})",
         "trackNumber": "skladba",
         "explicitStatus": "$t(common.explicitStatus)",
-        "sortName": "název v řazení"
+        "sortName": "název v řazení",
+        "matchAnd": "a",
+        "matchOr": "nebo"
     },
     "page": {
         "sidebar": {
@@ -899,7 +955,11 @@
             "viewAllTracks": "zobrazit všechny $t(entity.track, {\"count\": 2})",
             "viewAll": "zobrazit vše",
             "groupingTypeAll": "všechny typy vydání",
-            "groupingTypePrimary": "primární typy vydání"
+            "groupingTypePrimary": "primární typy vydání",
+            "favoriteSongs": "oblíbené skladby",
+            "topSongsCommunity": "komunita",
+            "topSongsPersonal": "osobní",
+            "favoriteSongsFrom": "oblíbené skladby od umělce {{title}}"
         },
         "itemDetail": {
             "copiedPath": "cesta úspěšně zkopírována",
@@ -933,6 +993,11 @@
         "collections": {
             "overrideExisting": "nahradit existující",
             "saveAsCollection": "uložit jako sbírku"
+        },
+        "releasenotes": {
+            "commitsSinceStable": "revize od {{stable}}",
+            "noNewCommits": "žádné nové revize v tomto období",
+            "noStableReleaseToCompare": "není dostupné žádné stabilní vydání k porovnání"
         }
     },
     "form": {
@@ -1005,7 +1070,9 @@
             "description": "popis",
             "expireInvalid": "čas vypršení musí být v budoucnosti",
             "setExpiration": "nastavit vypršení",
-            "createFailed": "nepodařilo se vytvořit sdílení (je sdílení povoleno?)"
+            "createFailed": "nepodařilo se vytvořit sdílení (je sdílení povoleno?)",
+            "copyToClipboard": "Zkopírovat do schránky: Ctrl+C, Enter",
+            "successMustClick": "sdílení úspěšně vytvořeno. klikněte sem pro otevření"
         },
         "privateMode": {
             "enabled": "soukromý režim povolen, stav přehrávání je nyní skryt před externími integracemi",
