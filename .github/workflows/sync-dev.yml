@@ -1,109 +1,110 @@
 name: Sync dev branch
 
 permissions:
-  contents: write
+    contents: write
+    workflows: write
 
 env:
-  UPSTREAM_URL: "https://github.com/jeffvli/feishin.git"
-  UPSTREAM_OWNER: "jeffvli"
-  UPSTREAM_REPO: "feishin"
-  DOWNSTREAM_OWNER: "thororen1234"
-  DOWNSTREAM_REPO: "feishin"
-  UPSTREAM_BRANCH: "development"
-  DOWNSTREAM_BRANCH: "development"
+    UPSTREAM_URL: "https://github.com/jeffvli/feishin.git"
+    UPSTREAM_OWNER: "jeffvli"
+    UPSTREAM_REPO: "feishin"
+    DOWNSTREAM_OWNER: "thororen1234"
+    DOWNSTREAM_REPO: "feishin"
+    UPSTREAM_BRANCH: "development"
+    DOWNSTREAM_BRANCH: "development"
 
 on:
-  schedule:
-    - cron: "0 * * * *"
-  workflow_dispatch:
+    schedule:
+        - cron: "0 * * * *"
+    workflow_dispatch:
 
 jobs:
-  sync:
-    runs-on: ubuntu-latest
+    sync:
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Sync upstream development
-        uses: verticalsync/sync-upstream-repo@master
-        with:
-          upstream_repo: ${{ env.UPSTREAM_URL }}
-          upstream_branch: ${{ env.UPSTREAM_BRANCH }}
-          downstream_branch: ${{ env.DOWNSTREAM_BRANCH }}
-          token: ${{ github.token }}
+        steps:
+            - name: Sync upstream development
+              uses: verticalsync/sync-upstream-repo@master
+              with:
+                  upstream_repo: ${{ env.UPSTREAM_URL }}
+                  upstream_branch: ${{ env.UPSTREAM_BRANCH }}
+                  downstream_branch: ${{ env.DOWNSTREAM_BRANCH }}
+                  token: ${{ github.token }}
 
-      - name: Get latest upstream release
-        id: upstream_release
-        run: |
-          curl -s -H "Authorization: Bearer ${{ github.token }}" \
-            https://api.github.com/repos/${{ env.UPSTREAM_OWNER }}/${{ env.UPSTREAM_REPO }}/releases/latest \
-            > upstream_release.json
+            - name: Get latest upstream release
+              id: upstream_release
+              run: |
+                  curl -s -H "Authorization: Bearer ${{ github.token }}" \
+                    https://api.github.com/repos/${{ env.UPSTREAM_OWNER }}/${{ env.UPSTREAM_REPO }}/releases/latest \
+                    > upstream_release.json
 
-          echo "tag=$(jq -r .tag_name upstream_release.json)" >> $GITHUB_OUTPUT
+                  echo "tag=$(jq -r .tag_name upstream_release.json)" >> $GITHUB_OUTPUT
 
-      - name: Check release in fork
-        id: check_release
-        run: |
-          status=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer ${{ github.token }}" \
-            https://api.github.com/repos/${{ env.DOWNSTREAM_OWNER }}/${{ env.DOWNSTREAM_REPO }}/releases/tags/${{ steps.upstream_release.outputs.tag }})
-          echo "status=$status" >> $GITHUB_OUTPUT
+            - name: Check release in fork
+              id: check_release
+              run: |
+                  status=$(curl -s -o /dev/null -w "%{http_code}" \
+                    -H "Authorization: Bearer ${{ github.token }}" \
+                    https://api.github.com/repos/${{ env.DOWNSTREAM_OWNER }}/${{ env.DOWNSTREAM_REPO }}/releases/tags/${{ steps.upstream_release.outputs.tag }})
+                  echo "status=$status" >> $GITHUB_OUTPUT
 
-      - name: Create mirrored release
-        if: steps.check_release.outputs.status != '200'
-        id: create_release
-        run: |
-          title=$(jq -r .name upstream_release.json)
-          body=$(jq -r .body upstream_release.json)
+            - name: Create mirrored release
+              if: steps.check_release.outputs.status != '200'
+              id: create_release
+              run: |
+                  title=$(jq -r .name upstream_release.json)
+                  body=$(jq -r .body upstream_release.json)
 
-          release_id=$(curl -s -X POST \
-            -H "Authorization: Bearer ${{ github.token }}" \
-            -H "Content-Type: application/json" \
-            https://api.github.com/repos/${{ env.DOWNSTREAM_OWNER }}/${{ env.DOWNSTREAM_REPO }}/releases \
-            -d @- <<EOF | jq -r .id
-          {
-            "tag_name": "${{ steps.upstream_release.outputs.tag }}",
-            "name": "$title",
-            "body": "$body",
-            "draft": false,
-            "prerelease": false
-          }
-          EOF
-          )
+                  release_id=$(curl -s -X POST \
+                    -H "Authorization: Bearer ${{ github.token }}" \
+                    -H "Content-Type: application/json" \
+                    https://api.github.com/repos/${{ env.DOWNSTREAM_OWNER }}/${{ env.DOWNSTREAM_REPO }}/releases \
+                    -d @- <<EOF | jq -r .id
+                  {
+                    "tag_name": "${{ steps.upstream_release.outputs.tag }}",
+                    "name": "$title",
+                    "body": "$body",
+                    "draft": false,
+                    "prerelease": false
+                  }
+                  EOF
+                  )
 
-          echo "release_id=$release_id" >> $GITHUB_OUTPUT
+                  echo "release_id=$release_id" >> $GITHUB_OUTPUT
 
-      - name: cd work
-        if: steps.check_release.outputs.status != '200'
-        run: cd /home/runner/work
+            - name: cd work
+              if: steps.check_release.outputs.status != '200'
+              run: cd /home/runner/work
 
-      - uses: pnpm/action-setup@v4
-        if: steps.check_release.outputs.status != '200'
-        with:
-          version: 10
+            - uses: pnpm/action-setup@v4
+              if: steps.check_release.outputs.status != '200'
+              with:
+                  version: 10
 
-      - name: Setup Node
-        if: steps.check_release.outputs.status != '200'
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
+            - name: Setup Node
+              if: steps.check_release.outputs.status != '200'
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22
 
-      - name: Fix permissions
-        if: steps.check_release.outputs.status != '200'
-        run: sudo chown -R $USER:$USER work
+            - name: Fix permissions
+              if: steps.check_release.outputs.status != '200'
+              run: sudo chown -R $USER:$USER work
 
-      - name: Install Wine
-        if: steps.check_release.outputs.status != '200'
-        run: sudo dpkg --add-architecture i386 && sudo apt update && sudo apt install -y wine64 wine32
+            - name: Install Wine
+              if: steps.check_release.outputs.status != '200'
+              run: sudo dpkg --add-architecture i386 && sudo apt update && sudo apt install -y wine64 wine32
 
-      - name: Build and upload Windows installer
-        if: steps.check_release.outputs.status != '200'
-        run: |
-          cd work
-          pnpm install
-          pnpm package:win:pr
-          FILE=$(ls dist/*.exe)
+            - name: Build and upload Windows installer
+              if: steps.check_release.outputs.status != '200'
+              run: |
+                  cd work
+                  pnpm install
+                  pnpm package:win:pr
+                  FILE=$(ls dist/*.exe)
 
-          curl -X POST \
-            -H "Authorization: Bearer ${{ github.token }}" \
-            -H "Content-Type: application/octet-stream" \
-            "https://uploads.github.com/repos/${{ env.DOWNSTREAM_OWNER }}/${{ env.DOWNSTREAM_REPO }}/releases/${{ steps.create_release.outputs.release_id }}/assets?name=$(basename $FILE)" \
-            --data-binary @"$FILE"
+                  curl -X POST \
+                    -H "Authorization: Bearer ${{ github.token }}" \
+                    -H "Content-Type: application/octet-stream" \
+                    "https://uploads.github.com/repos/${{ env.DOWNSTREAM_OWNER }}/${{ env.DOWNSTREAM_REPO }}/releases/${{ steps.create_release.outputs.release_id }}/assets?name=$(basename $FILE)" \
+                    --data-binary @"$FILE"
