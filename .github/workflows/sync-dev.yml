@@ -71,6 +71,18 @@ jobs:
 
                   echo "release_id=$release_id" >> $GITHUB_OUTPUT
 
+            - name: Clean workspace
+              if: steps.check_release.outputs.status != '200'
+              run: sudo rm -rf "$GITHUB_WORKSPACE"
+
+            - name: Checkout downstream repo
+              if: steps.check_release.outputs.status != '200'
+              uses: actions/checkout@v4
+              with:
+                  repository: ${{ env.DOWNSTREAM_OWNER }}/${{ env.DOWNSTREAM_REPO }}
+                  ref: ${{ env.DOWNSTREAM_BRANCH }}
+                  token: ${{ secrets.PAT_TOKEN }}
+
             - name: Checkout downstream repo
               if: steps.check_release.outputs.status != '200'
               uses: actions/checkout@v4
