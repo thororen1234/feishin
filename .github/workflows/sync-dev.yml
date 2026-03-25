@@ -73,7 +73,9 @@ jobs:
 
             - name: Clean workspace
               if: steps.check_release.outputs.status != '200'
-              run: sudo rm -rf "$GITHUB_WORKSPACE"
+              run: |
+                  sudo rm -rf "$GITHUB_WORKSPACE"
+                  mkdir -p "$GITHUB_WORKSPACE"
 
             - name: Checkout downstream repo
               if: steps.check_release.outputs.status != '200'
