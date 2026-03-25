@@ -17,7 +17,12 @@ import { IgnoreCorsSslSwitches } from '/@/renderer/features/servers/components/i
 import { AnimatedPage } from '/@/renderer/features/shared/components/animated-page';
 import { PageErrorBoundary } from '/@/renderer/features/shared/components/page-error-boundary';
 import { AppRoute } from '/@/renderer/router/routes';
-import { useAuthStoreActions, useCurrentServer } from '/@/renderer/store';
+import {
+    getServerById,
+    useAuthStoreActions,
+    useCurrentServer,
+    useServerList,
+} from '/@/renderer/store';
 import { Button } from '/@/shared/components/button/button';
 import { Center } from '/@/shared/components/center/center';
 import { Code } from '/@/shared/components/code/code';
@@ -46,17 +51,21 @@ const SERVER_NAMES: Record<ServerType, string> = {
     [ServerType.SUBSONIC]: 'OpenSubsonic',
 };
 
+const normalizeUrl = (url: string) => url.replace(/\/$/, '');
+
 const LoginRoute = () => {
     const { t } = useTranslation();
     const [isLoading, setIsLoading] = useState(false);
-    const { addServer, setCurrentServer } = useAuthStoreActions();
+    const { addServer, setCurrentServer, updateServer } = useAuthStoreActions();
     const currentServer = useCurrentServer();
+    const serverList = useServerList();
 
     // Check if server lock is configured
     const serverLock = isServerLock();
     const serverType = window.SERVER_TYPE ? toServerType(window.SERVER_TYPE) : null;
     const serverName = window.SERVER_NAME || '';
     const serverUrl = window.SERVER_URL || '';
+    const remoteUrl = window.REMOTE_URL || '';
     const legacyAuth = serverLock && isLegacyAuth();
 
     const config = [
@@ -79,6 +88,11 @@ const LoginRoute = () => {
             isValid: serverUrl !== '',
             key: 'SERVER_URL',
             value: serverUrl,
+        },
+        {
+            isValid: true,
+            key: 'REMOTE_URL',
+            value: remoteUrl,
         },
     ];
 
@@ -141,23 +155,44 @@ const LoginRoute = () => {
                 });
             }
 
+            const normalizedUrl = normalizeUrl(serverUrl);
+            const normalizedRemoteURL = normalizeUrl(remoteUrl);
+            const existingServer =
+                serverLock &&
+                Object.values(serverList).find((s) => normalizeUrl(s.url) === normalizedUrl);
+
             const serverItem: ServerListItemWithCredential = {
                 credential: data.credential,
                 id: nanoid(),
                 isAdmin: data.isAdmin,
                 name: serverName,
+                remoteUrl: normalizedRemoteURL,
                 type: serverType as ServerType,
-                url: serverUrl.replace(/\/$/, ''),
+                url: normalizedUrl,
                 userId: data.userId,
                 username: data.username,
             };
 
-            if (data.ndCredential !== undefined) {
-                serverItem.ndCredential = data.ndCredential;
+            if (existingServer) {
+                const updates: Partial<ServerListItemWithCredential> = {
+                    credential: data.credential,
+                    isAdmin: data.isAdmin,
+                    userId: data.userId,
+                    username: data.username,
+                };
+                if (data.ndCredential !== undefined) {
+                    updates.ndCredential = data.ndCredential;
+                }
+                updateServer(existingServer.id, updates);
+                const updated = getServerById(existingServer.id);
+                if (updated) setCurrentServer(updated);
+            } else {
+                if (data.ndCredential !== undefined) {
+                    serverItem.ndCredential = data.ndCredential;
+                }
+                addServer(serverItem);
+                setCurrentServer(serverItem);
             }
-
-            addServer(serverItem);
-            setCurrentServer(serverItem);
 
             toast.success({
                 message: t('form.addServer.success', { postProcess: 'sentenceCase' }),

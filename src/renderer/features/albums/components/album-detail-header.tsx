@@ -1,10 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { forwardRef, Fragment, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 
 import styles from './album-detail-header.module.css';
 
+import { queryKeys } from '/@/renderer/api/query-keys';
 import { albumQueries } from '/@/renderer/features/albums/api/album-api';
 import { JoinedArtists } from '/@/renderer/features/albums/components/joined-artists';
 import { ContextMenuController } from '/@/renderer/features/context-menu/context-menu-controller';
@@ -15,10 +16,11 @@ import {
 } from '/@/renderer/features/shared/components/library-header';
 import { useSetFavorite } from '/@/renderer/features/shared/hooks/use-set-favorite';
 import { useSetRating } from '/@/renderer/features/shared/hooks/use-set-rating';
+import { songsQueries } from '/@/renderer/features/songs/api/songs-api';
 import { AppRoute } from '/@/renderer/router/routes';
 import { useCurrentServer, useShowRatings } from '/@/renderer/store';
-import { usePlayButtonBehavior } from '/@/renderer/store/settings.store';
-import { formatDateAbsoluteUTC, formatDurationString } from '/@/renderer/utils';
+import { useArtistRadioCount, usePlayButtonBehavior } from '/@/renderer/store/settings.store';
+import { formatDateAbsoluteUTC, formatDurationString, formatSizeString } from '/@/renderer/utils';
 import { normalizeReleaseTypes } from '/@/renderer/utils/normalize-release-types';
 import { Group } from '/@/shared/components/group/group';
 import { Separator } from '/@/shared/components/separator/separator';
@@ -32,6 +34,8 @@ export const AlbumDetailHeader = forwardRef<HTMLDivElement>((_props, ref) => {
     const { t } = useTranslation();
     const server = useCurrentServer();
     const showRatings = useShowRatings();
+    const queryClient = useQueryClient();
+    const albumRadioCount = useArtistRadioCount();
     const detailQuery = useQuery(
         albumQueries.detail({ query: { id: albumId }, serverId: server?.id }),
     );
@@ -41,7 +45,7 @@ export const AlbumDetailHeader = forwardRef<HTMLDivElement>((_props, ref) => {
         (detailQuery?.data?._serverType === ServerType.NAVIDROME ||
             detailQuery?.data?._serverType === ServerType.SUBSONIC);
 
-    const { addToQueueByFetch } = usePlayer();
+    const { addToQueueByData, addToQueueByFetch } = usePlayer();
     const playButtonBehavior = usePlayButtonBehavior();
 
     const setRating = useSetRating();
@@ -90,6 +94,28 @@ export const AlbumDetailHeader = forwardRef<HTMLDivElement>((_props, ref) => {
             cmd: { items: [detailQuery.data], type: LibraryItem.ALBUM },
             event: e,
         });
+    };
+
+    const handleAlbumRadio = async () => {
+        if (!server?.id || !albumId) return;
+
+        try {
+            const albumRadioSongs = await queryClient.fetchQuery({
+                ...songsQueries.albumRadio({
+                    query: {
+                        albumId: albumId,
+                        count: albumRadioCount,
+                    },
+                    serverId: server.id,
+                }),
+                queryKey: queryKeys.player.fetch({ albumId: albumId }),
+            });
+            if (albumRadioSongs && albumRadioSongs.length > 0) {
+                addToQueueByData(albumRadioSongs, Play.NOW);
+            }
+        } catch (error) {
+            console.error('Failed to load album radio:', error);
+        }
     };
 
     const releaseYear = detailQuery?.data?.releaseYear;
@@ -167,6 +193,12 @@ export const AlbumDetailHeader = forwardRef<HTMLDivElement>((_props, ref) => {
                     value: detailQuery?.data?.explicitStatus,
                 },
                 {
+                    id: 'size',
+                    value: detailQuery?.data?.size
+                        ? formatSizeString(detailQuery?.data?.size)
+                        : undefined,
+                },
+                {
                     id: 'playCount',
                     value: playCount ? t('entity.play', { count: playCount }) : undefined,
                 },
@@ -233,8 +265,8 @@ export const AlbumDetailHeader = forwardRef<HTMLDivElement>((_props, ref) => {
                         {metadataItems.map((item, index) => (
                             <Fragment key={item.id}>
                                 {index > 0 && (
-                                    <Text fw={400} isMuted isNoSelect>
-                                        •
+                                    <Text isMuted isNoSelect>
+                                        <Separator />
                                     </Text>
                                 )}
                                 <Text fw={400}>{item.value}</Text>
@@ -249,6 +281,7 @@ export const AlbumDetailHeader = forwardRef<HTMLDivElement>((_props, ref) => {
                     </Group>
                     <LibraryHeaderMenu
                         favorite={detailQuery?.data?.userFavorite}
+                        onAlbumRadio={handleAlbumRadio}
                         onFavorite={handleFavorite}
                         onMore={handleMoreOptions}
                         onPlay={(type) => handlePlay(type)}

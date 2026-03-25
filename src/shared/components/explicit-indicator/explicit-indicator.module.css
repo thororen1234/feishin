@@ -1,6 +1,7 @@
 .root {
     font-family:
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Segoe UI Symbol', Twemoji,
+        Symbola,
+        'Segoe UI Emoji',
         sans-serif;
 }
 
@@ -38,4 +39,8 @@
 
 .muted {
     opacity: 0.85;
+}
+
+.with-space {
+    padding-right: var(--theme-spacing-xs);
 }

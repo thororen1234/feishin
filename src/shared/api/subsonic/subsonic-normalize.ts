@@ -137,14 +137,19 @@ const normalizeSong = (
     discTitleMap?: Map<number, string>,
 ): Song => {
     const participants = getParticipants(item);
+    const albumArtistsList = getArtistList(item.albumArtists, item.artistId, item.artist);
+    const albumArtistName =
+        item.albumArtists?.length > 0
+            ? item.albumArtists.map((a) => a.name).join(', ')
+            : item.artist || '';
 
     return {
         _itemType: LibraryItem.SONG,
         _serverId: server?.id || 'unknown',
         _serverType: ServerType.SUBSONIC,
         album: item.album || '',
-        albumArtistName: item.artist || '',
-        albumArtists: getArtistList(item.albumArtists, item.artistId, item.artist),
+        albumArtistName,
+        albumArtists: albumArtistsList,
         albumId: item.albumId?.toString() || '',
         artistName: item.artist || '',
         artists: getArtistList(item.artists, item.artistId, item.artist, participants),
@@ -154,7 +159,7 @@ const normalizeSong = (
         channels: item.channelCount || null,
         comment: null,
         compilation: null,
-        container: item.contentType,
+        container: item.contentType.startsWith('audio/') ? item.contentType.split('/')[1] : null,
         createdAt: item.created,
         discNumber: item.discNumber || 1,
         discSubtitle: discTitleMap?.get(item.discNumber ?? 1) ?? null,
@@ -306,6 +311,7 @@ const normalizeAlbum = (
         isCompilation: null,
         lastPlayedAt: null,
         mbzId: null,
+        mbzReleaseGroupId: null,
         name: item.name,
         originalDate: releaseDate,
         originalYear: item.year || null,

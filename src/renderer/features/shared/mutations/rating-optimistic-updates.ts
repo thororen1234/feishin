@@ -7,6 +7,7 @@ import {
     Album,
     AlbumArtist,
     AlbumArtistDetailResponse,
+    AlbumArtistInfoResponse,
     AlbumArtistListResponse,
     AlbumDetailResponse,
     AlbumListResponse,
@@ -235,24 +236,39 @@ export const applyRatingOptimisticUpdates = (
                                 return { ...prev, userRating: rating };
                             }
 
-                            if (prev.similarArtists && prev.similarArtists.length > 0) {
-                                const hasMatchingSimilarArtist = prev.similarArtists.some(
-                                    (artist) => itemIdSet.has(artist.id),
-                                );
-
-                                if (hasMatchingSimilarArtist) {
-                                    return {
-                                        ...prev,
-                                        similarArtists: prev.similarArtists.map((artist) =>
-                                            itemIdSet.has(artist.id)
-                                                ? { ...artist, userRating: rating }
-                                                : artist,
-                                        ),
-                                    };
-                                }
-                            }
-
                             return prev;
+                        },
+                    });
+                }
+            });
+
+            const infoQueryKey = queryKeys.albumArtists.info(variables.apiClientProps.serverId);
+            const infoQueries = queryClient.getQueriesData({
+                exact: false,
+                queryKey: infoQueryKey,
+            });
+
+            infoQueries.forEach(([queryKey, data]) => {
+                if (data) {
+                    pendingUpdates.push({
+                        previousData: data,
+                        queryKey,
+                        updater: (prev: AlbumArtistInfoResponse | null | undefined) => {
+                            if (!prev?.similarArtists?.length) return prev;
+
+                            const hasMatching = prev.similarArtists.some((artist) =>
+                                itemIdSet.has(artist.id),
+                            );
+                            if (!hasMatching) return prev;
+
+                            return {
+                                ...prev,
+                                similarArtists: prev.similarArtists.map((artist) =>
+                                    itemIdSet.has(artist.id)
+                                        ? { ...artist, userRating: rating }
+                                        : artist,
+                                ),
+                            };
                         },
                     });
                 }
@@ -519,6 +535,28 @@ export const applyRatingOptimisticUpdates = (
                 }
             });
 
+            const songListQueryKey = queryKeys.songs.list(variables.apiClientProps.serverId);
+            const songListQueries = queryClient.getQueriesData({
+                exact: false,
+                queryKey: songListQueryKey,
+            });
+
+            songListQueries.forEach(([queryKey, data]) => {
+                if (data) {
+                    pendingUpdates.push({
+                        previousData: data,
+                        queryKey,
+                        updater: (prev: undefined | { items: Song[] }) => {
+                            if (!prev) return prev;
+                            const updatedItems = updateItemInArray(prev.items, itemIdSet, (item) =>
+                                createRatingUpdater<Song>(item),
+                            );
+                            return updatedItems ? { ...prev, items: updatedItems } : prev;
+                        },
+                    });
+                }
+            });
+
             const topSongsQueryKey = queryKeys.albumArtists.topSongs(
                 variables.apiClientProps.serverId,
             );
@@ -605,6 +643,10 @@ export const applyRatingOptimisticUpdatesDeferred = (
                 'album-artist-detail',
             );
             collectQueries(
+                queryKeys.albumArtists.info(variables.apiClientProps.serverId),
+                'album-artist-info',
+            );
+            collectQueries(
                 queryKeys.albumArtists.list(variables.apiClientProps.serverId),
                 'album-artist-list',
             );
@@ -652,6 +694,7 @@ export const applyRatingOptimisticUpdatesDeferred = (
                 queryKeys.songs.detail(variables.apiClientProps.serverId),
                 'song-detail',
             );
+            collectQueries(queryKeys.songs.list(variables.apiClientProps.serverId), 'song-list');
             collectQueries(
                 queryKeys.albumArtists.topSongs(variables.apiClientProps.serverId),
                 'top-songs',
@@ -671,19 +714,6 @@ export const applyRatingOptimisticUpdatesDeferred = (
                     case 'song-detail': {
                         if (itemIdSet.has(prev.id)) {
                             return { ...prev, userRating: rating };
-                        }
-                        if (prev.similarArtists) {
-                            const hasMatch = prev.similarArtists.some((a: any) =>
-                                itemIdSet.has(a.id),
-                            );
-                            if (hasMatch) {
-                                return {
-                                    ...prev,
-                                    similarArtists: prev.similarArtists.map((a: any) =>
-                                        itemIdSet.has(a.id) ? { ...a, userRating: rating } : a,
-                                    ),
-                                };
-                            }
                         }
                         return prev;
                     }
@@ -709,9 +739,21 @@ export const applyRatingOptimisticUpdatesDeferred = (
                         }
                         return prev;
                     }
+                    case 'album-artist-info': {
+                        if (!prev?.similarArtists?.length) return prev;
+                        const hasMatch = prev.similarArtists.some((a: any) => itemIdSet.has(a.id));
+                        if (!hasMatch) return prev;
+                        return {
+                            ...prev,
+                            similarArtists: prev.similarArtists.map((a: any) =>
+                                itemIdSet.has(a.id) ? { ...a, userRating: rating } : a,
+                            ),
+                        };
+                    }
                     case 'album-artist-list':
                     case 'album-list':
                     case 'artist-list':
+                    case 'song-list':
                     case 'top-songs': {
                         const updatedItems = updateItemInArray(
                             prev.items || [],

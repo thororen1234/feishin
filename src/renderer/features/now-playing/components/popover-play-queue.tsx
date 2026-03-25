@@ -12,7 +12,7 @@ import { ItemListKey } from '/@/shared/types/types';
 
 interface PopoverPlayQueueProps {
     onClose?: () => void;
-    onToggle?: () => void;
+    onToggle?: (e: React.MouseEvent<HTMLButtonElement>) => void;
     opened?: boolean;
 }
 
@@ -62,6 +62,7 @@ export const PopoverPlayQueue = ({
                     <PlayQueueListControls
                         handleSearch={setSearch}
                         searchTerm={search}
+                        tableRef={queueRef}
                         type={ItemListKey.SIDE_QUEUE}
                     />
                     <PlayQueue

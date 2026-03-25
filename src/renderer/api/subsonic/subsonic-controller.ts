@@ -20,15 +20,48 @@ import { hasFeature, sortAlbumArtistList, sortAlbumList, sortSongList } from '/@
 import {
     AlbumListSort,
     GenreListSort,
+    ImageArgs,
+    ImageRequest,
     InternalControllerEndpoint,
     LibraryItem,
     PlaylistListSort,
+    ReplaceApiClientProps,
     ServerType,
     Song,
     SongListSort,
     SortOrder,
 } from '/@/shared/types/domain-types';
 import { ServerFeature, ServerFeatures } from '/@/shared/types/features-types';
+
+const getSubsonicImageRequest = ({
+    apiClientProps: { server },
+    baseUrl,
+    query,
+}: ReplaceApiClientProps<ImageArgs>): ImageRequest | null => {
+    const { id, size } = query;
+    const imageSize = size;
+    const url = baseUrl || getServerUrl(server);
+
+    if (!url || !server?.credential) {
+        return null;
+    }
+
+    // Check for default placeholder image ID
+    if (id.match('2a96cbd8b46e442fc41c2b86b821562f')) {
+        return null;
+    }
+
+    return {
+        cacheKey: ['subsonic', server.id, baseUrl || '', id, imageSize || ''].join(':'),
+        url:
+            `${url}/rest/getCoverArt.view` +
+            `?id=${id}` +
+            `&${server.credential}` +
+            '&v=1.13.0' +
+            '&c=Feishin' +
+            (imageSize ? `&size=${imageSize}` : ''),
+    };
+};
 
 const ALBUM_LIST_SORT_MAPPING: Record<AlbumListSort, AlbumListSortType | undefined> = {
     [AlbumListSort.ALBUM_ARTIST]: AlbumListSortType.ALPHABETICAL_BY_ARTIST,
@@ -38,6 +71,7 @@ const ALBUM_LIST_SORT_MAPPING: Record<AlbumListSort, AlbumListSortType | undefin
     [AlbumListSort.DURATION]: undefined,
     [AlbumListSort.EXPLICIT_STATUS]: undefined,
     [AlbumListSort.FAVORITED]: AlbumListSortType.STARRED,
+    [AlbumListSort.ID]: undefined,
     [AlbumListSort.NAME]: AlbumListSortType.ALPHABETICAL_BY_NAME,
     [AlbumListSort.PLAY_COUNT]: AlbumListSortType.FREQUENT,
     [AlbumListSort.RANDOM]: AlbumListSortType.RANDOM,
@@ -257,29 +291,17 @@ export const SubsonicController: InternalControllerEndpoint = {
     getAlbumArtistDetail: async (args) => {
         const { apiClientProps, query } = args;
 
-        const [artistInfoRes, res] = await Promise.all([
-            ssApiClient(apiClientProps).getArtistInfo({
-                query: {
-                    id: query.id,
-                },
-            }),
-            ssApiClient(apiClientProps).getArtist({
-                query: {
-                    id: query.id,
-                },
-            }),
-        ]);
+        const res = await ssApiClient(apiClientProps).getArtist({
+            query: {
+                id: query.id,
+            },
+        });
 
         if (res.status !== 200) {
             throw new Error('Failed to get album artist detail');
         }
 
         const artist = res.body.artist;
-
-        let artistInfo;
-        if (artistInfoRes.status === 200) {
-            artistInfo = artistInfoRes.body.artistInfo;
-        }
 
         return {
             ...ssNormalize.albumArtist(artist, apiClientProps.server),
@@ -291,10 +313,36 @@ export const SubsonicController: InternalControllerEndpoint = {
                     args.context?.pathReplaceWith,
                 ),
             ),
+            similarArtists: null,
+        };
+    },
+    getAlbumArtistInfo: async (args) => {
+        const { apiClientProps, query } = args;
+
+        const artistInfoRes = await ssApiClient(apiClientProps).getArtistInfo({
+            query: {
+                id: query.id,
+                ...(query.limit != null && { count: query.limit }),
+            },
+        });
+
+        if (artistInfoRes.status !== 200) {
+            return null;
+        }
+
+        const artistInfo = artistInfoRes.body.artistInfo;
+
+        return {
+            biography: artistInfo?.biography || null,
             similarArtists:
-                artistInfo?.similarArtist?.map((artist) =>
-                    ssNormalize.albumArtist(artist, apiClientProps.server),
-                ) || null,
+                artistInfo?.similarArtist?.map((artist) => ({
+                    id: artist.id,
+                    imageId: null,
+                    imageUrl: null,
+                    name: artist.name,
+                    userFavorite: Boolean(artist.starred) || false,
+                    userRating: artist.userRating ?? null,
+                })) ?? null,
         };
     },
     getAlbumArtistList: async (args) => {
@@ -322,6 +370,10 @@ export const SubsonicController: InternalControllerEndpoint = {
             });
 
             results = searchResults;
+        }
+
+        if (query.favorite) {
+            results = results.filter((artist) => artist.userFavorite);
         }
 
         return sortAndPaginate(results, {
@@ -675,6 +727,33 @@ export const SubsonicController: InternalControllerEndpoint = {
 
         return totalRecordCount;
     },
+    getAlbumRadio: async (args) => {
+        const { apiClientProps, context, query } = args;
+
+        const res = await ssApiClient(apiClientProps).getSimilarSongs({
+            query: {
+                count: query.count,
+                id: query.albumId,
+            },
+        });
+
+        if (res.status !== 200) {
+            throw new Error('Failed to get album radio songs');
+        }
+
+        if (!res.body.similarSongs?.song) {
+            return [];
+        }
+
+        return res.body.similarSongs.song.map((song) =>
+            ssNormalize.song(
+                song,
+                apiClientProps.server,
+                context?.pathReplace,
+                context?.pathReplaceWith,
+            ),
+        );
+    },
     getArtistList: async (args) => {
         const { apiClientProps, query } = args;
 
@@ -762,7 +841,7 @@ export const SubsonicController: InternalControllerEndpoint = {
     getFolder: async ({ apiClientProps, context, query }) => {
         const sortOrder = (query.sortOrder?.toLowerCase() ?? 'asc') as 'asc' | 'desc';
 
-        const isRootFolderId = /^\d+$/.test(query.id);
+        const isRootFolderId = query.id === '0';
 
         if (isRootFolderId) {
             const res = await ssApiClient(apiClientProps).getIndexes({
@@ -906,29 +985,8 @@ export const SubsonicController: InternalControllerEndpoint = {
             startIndex: query.startIndex,
         });
     },
-    getImageUrl: ({ apiClientProps: { server }, baseUrl, query }) => {
-        const { id, size } = query;
-        const imageSize = size;
-        const url = baseUrl || getServerUrl(server);
-
-        if (!url || !server?.credential) {
-            return null;
-        }
-
-        // Check for default placeholder image ID
-        if (id.match('2a96cbd8b46e442fc41c2b86b821562f')) {
-            return null;
-        }
-
-        return (
-            `${url}/rest/getCoverArt.view` +
-            `?id=${id}` +
-            `&${server.credential}` +
-            '&v=1.13.0' +
-            '&c=Feishin' +
-            (imageSize ? `&size=${imageSize}` : '')
-        );
-    },
+    getImageRequest: getSubsonicImageRequest,
+    getImageUrl: (args) => getSubsonicImageRequest(args)?.url || null,
     getInternetRadioStations: async (args) => {
         const { apiClientProps } = args;
 
@@ -1079,15 +1137,15 @@ export const SubsonicController: InternalControllerEndpoint = {
             const res = await ssApiClient(apiClientProps).getPlayQueueByIndex();
 
             if (res.status !== 200) {
-                throw new Error('Failed to get random songs');
+                throw new Error('Failed to get play queue');
             }
 
             const { changed, changedBy, currentIndex, entry, position, username } =
-                res.body.playQueueByIndex;
+                res.body.playQueueByIndex || {}; // if there is no queue saved, playQueueByIndex may be undefined from a bug in Navidrome
 
             return {
-                changed,
-                changedBy,
+                changed: changed ?? '',
+                changedBy: changedBy ?? '',
                 currentIndex: currentIndex ?? 0,
                 entry:
                     entry?.map((song) =>
@@ -1099,13 +1157,13 @@ export const SubsonicController: InternalControllerEndpoint = {
                         ),
                     ) || [],
                 positionMs: position ?? 0,
-                username,
+                username: username ?? '',
             };
         } else {
             const res = await ssApiClient(apiClientProps).getPlayQueue();
 
             if (res.status !== 200) {
-                throw new Error('Failed to get random songs');
+                throw new Error('Failed to get play queue');
             }
 
             const { changed, changedBy, current, entry, position, username } = res.body.playQueue;

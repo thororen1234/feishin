@@ -1,8 +1,10 @@
 import type {
     AlbumArtistDetailQuery,
+    AlbumArtistInfoQuery,
     AlbumArtistListQuery,
     AlbumDetailQuery,
     AlbumListQuery,
+    AlbumRadioQuery,
     ArtistListQuery,
     ArtistRadioQuery,
     FolderQuery,
@@ -91,6 +93,13 @@ export const queryKeys: Record<
             }
 
             return [serverId, 'albumArtists', 'infiniteList'] as const;
+        },
+        info: (serverId: string, query?: AlbumArtistInfoQuery) => {
+            if (query) {
+                return [serverId, 'albumArtists', 'info', query] as const;
+            }
+
+            return [serverId, 'albumArtists', 'info'] as const;
         },
         list: (serverId: string, query?: AlbumArtistListQuery) => {
             const { filter, pagination } = splitPaginatedQuery(query);
@@ -338,6 +347,11 @@ export const queryKeys: Record<
         list: (serverId: string) => [serverId, 'roles'] as const,
     },
     search: {
+        infiniteList: (
+            serverId: string,
+            type: 'albumArtists' | 'albums' | 'songs',
+            searchTerm: string,
+        ) => [serverId, 'search', 'infiniteList', type, searchTerm] as const,
         list: (serverId: string, query?: SearchQuery) => {
             if (query) return [serverId, 'search', 'list', query] as const;
             return [serverId, 'search', 'list'] as const;
@@ -348,6 +362,10 @@ export const queryKeys: Record<
         root: (serverId: string) => [serverId] as const,
     },
     songs: {
+        albumRadio: (serverId: string, query?: AlbumRadioQuery) => {
+            if (query) return [serverId, 'songs', 'albumRadio', query] as const;
+            return [serverId, 'songs', 'albumRadio'] as const;
+        },
         artistRadio: (serverId: string, query?: ArtistRadioQuery) => {
             if (query) return [serverId, 'songs', 'artistRadio', query] as const;
             return [serverId, 'songs', 'artistRadio'] as const;
@@ -410,15 +428,7 @@ export const queryKeys: Record<
             if (query) return [serverId, 'songs', 'randomSongList', query] as const;
             return [serverId, 'songs', 'randomSongList'] as const;
         },
-        remoteLyrics: (serverId: string, query?: LyricsQuery) => {
-            if (query) return [serverId, 'song', 'lyrics', 'remote', query] as const;
-            return [serverId, 'song', 'lyrics', 'remote'] as const;
-        },
         root: (serverId: string) => [serverId, 'songs'] as const,
-        serverLyrics: (serverId: string, query?: LyricsQuery) => {
-            if (query) return [serverId, 'song', 'lyrics', 'server', query] as const;
-            return [serverId, 'song', 'lyrics', 'server'] as const;
-        },
         similar: (serverId: string, query?: SimilarSongsQuery) => {
             if (query) return [serverId, 'song', 'similar', query] as const;
             return [serverId, 'song', 'similar'] as const;

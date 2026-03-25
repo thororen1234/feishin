@@ -103,6 +103,7 @@ type SettingsProperties = {
     'settings.themeLight': string;
     'settings.tray': boolean;
     'settings.useThemeAccentColor': boolean;
+    'settings.useThemePrimaryShade': boolean;
     'settings.windowBarStyle': Platform;
     'settings.zoomFactor': number;
 };
@@ -166,6 +167,9 @@ const getSettingsProperties = (): SettingsProperties => {
         'settings.lyrics.sources.netease': ignoreWeb(
             settings.lyrics.sources.includes(LyricSource.NETEASE),
         ),
+        'settings.lyrics.sources.simpmusic': ignoreWeb(
+            settings.lyrics.sources.includes(LyricSource.SIMPMUSIC),
+        ),
         'settings.minimizeToTray': ignoreWeb(settings.window.minimizeToTray),
         // 'settings.musicBrainz': settings.general.musicBrainz,
         'settings.nativeAspectRatio': settings.general.nativeAspectRatio,
@@ -192,6 +196,7 @@ const getSettingsProperties = (): SettingsProperties => {
         'settings.themeLight': settings.general.themeLight,
         'settings.tray': ignoreWeb(settings.window.tray),
         'settings.useThemeAccentColor': settings.general.useThemeAccentColor,
+        'settings.useThemePrimaryShade': settings.general.useThemePrimaryShade,
         'settings.windowBarStyle': ignoreWeb(settings.window.windowBarStyle),
         'settings.zoomFactor': ignoreWeb(settings.general.zoomFactor),
     } as any;

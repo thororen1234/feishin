@@ -200,6 +200,18 @@ export const controller: GeneralController = {
             server.type,
         )?.(addContext({ ...args, apiClientProps: { ...args.apiClientProps, server } }));
     },
+    getAlbumArtistInfo(args) {
+        const server = getServerById(args.apiClientProps.serverId);
+
+        if (!server) {
+            return Promise.resolve(null);
+        }
+
+        const fn = apiController('getAlbumArtistInfo', server.type);
+        return fn
+            ? fn(addContext({ ...args, apiClientProps: { ...args.apiClientProps, server } }))
+            : Promise.resolve(null);
+    },
     getAlbumArtistList(args) {
         const server = getServerById(args.apiClientProps.serverId);
 
@@ -308,6 +320,20 @@ export const controller: GeneralController = {
             }),
         );
     },
+    getAlbumRadio(args) {
+        const server = getServerById(args.apiClientProps.serverId);
+
+        if (!server) {
+            throw new Error(
+                `${i18n.t('error.apiRouteError', { postProcess: 'sentenceCase' })}: getAlbumRadio`,
+            );
+        }
+
+        return apiController(
+            'getAlbumRadio',
+            server.type,
+        )?.(addContext({ ...args, apiClientProps: { ...args.apiClientProps, server } }));
+    },
     getArtistList(args) {
         const server = getServerById(args.apiClientProps.serverId);
 
@@ -414,6 +440,25 @@ export const controller: GeneralController = {
                 apiClientProps: { ...args.apiClientProps, server },
                 query: mergeMusicFolderId(args.query, server),
             }),
+        );
+    },
+    getImageRequest(args) {
+        const server = getServerById(args.apiClientProps.serverId);
+
+        if (!server) {
+            return null;
+        }
+
+        return (
+            apiController(
+                'getImageRequest',
+                server.type,
+            )?.(
+                addContext({
+                    ...args,
+                    apiClientProps: { ...args.apiClientProps, server },
+                }),
+            ) || null
         );
     },
     getImageUrl(args) {

@@ -26,6 +26,7 @@ export enum ItemListKey {
     GENRE_ALBUM = 'genreAlbum',
     GENRE_SONG = 'genreSong',
     PLAYLIST = LibraryItem.PLAYLIST,
+    PLAYLIST_ALBUM = 'playlistAlbum',
     PLAYLIST_SONG = LibraryItem.PLAYLIST_SONG,
     QUEUE_SONG = LibraryItem.QUEUE_SONG,
     RADIO = 'radio',
@@ -34,6 +35,7 @@ export enum ItemListKey {
 }
 
 export enum ListDisplayType {
+    DETAIL = 'detail',
     GRID = 'poster',
     LIST = 'list',
     TABLE = 'table',
@@ -164,6 +166,7 @@ export enum TableColumn {
     ALBUM = 'album',
     ALBUM_ARTIST = 'albumArtists',
     ALBUM_COUNT = 'albumCount',
+    ALBUM_GROUP = 'albumGroup',
     ARTIST = 'artists',
     BIOGRAPHY = 'biography',
     BIT_DEPTH = 'bitDepth',

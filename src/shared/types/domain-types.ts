@@ -186,6 +186,7 @@ export type Album = {
     isCompilation: boolean | null;
     lastPlayedAt: null | string;
     mbzId: null | string;
+    mbzReleaseGroupId: null | string;
     name: string;
     originalDate: null | string;
     originalYear: null | number;
@@ -465,6 +466,7 @@ export enum AlbumListSort {
     DURATION = 'duration',
     EXPLICIT_STATUS = 'explicitStatus',
     FAVORITED = 'favorited',
+    ID = 'id',
     NAME = 'name',
     PLAY_COUNT = 'playCount',
     RANDOM = 'random',
@@ -520,6 +522,7 @@ export const albumListSortMap: AlbumListSortMap = {
         duration: undefined,
         explicitStatus: undefined,
         favorited: undefined,
+        id: undefined,
         name: JFAlbumListSort.NAME,
         playCount: JFAlbumListSort.PLAY_COUNT,
         random: JFAlbumListSort.RANDOM,
@@ -539,6 +542,7 @@ export const albumListSortMap: AlbumListSortMap = {
         duration: NDAlbumListSort.DURATION,
         explicitStatus: NDAlbumListSort.EXPLICIT_STATUS,
         favorited: NDAlbumListSort.STARRED,
+        id: undefined,
         name: NDAlbumListSort.NAME,
         playCount: NDAlbumListSort.PLAY_COUNT,
         random: NDAlbumListSort.RANDOM,
@@ -559,6 +563,7 @@ export const albumListSortMap: AlbumListSortMap = {
         duration: undefined,
         explicitStatus: undefined,
         favorited: undefined,
+        id: undefined,
         name: undefined,
         playCount: undefined,
         random: undefined,
@@ -618,6 +623,7 @@ export interface SongListQuery extends BaseQuery<SongListSort> {
     artistIds?: string[];
     favorite?: boolean;
     genreIds?: string[];
+    hasRating?: boolean;
     imageSize?: number;
     limit?: number;
     maxYear?: number;
@@ -813,6 +819,16 @@ export type AlbumArtistDetailArgs = BaseEndpointArgs & { query: AlbumArtistDetai
 export type AlbumArtistDetailQuery = { id: string };
 
 export type AlbumArtistDetailResponse = AlbumArtist | null;
+
+export type AlbumArtistInfoArgs = BaseEndpointArgs & { query: AlbumArtistInfoQuery };
+
+export type AlbumArtistInfoQuery = { id: string; limit?: number };
+
+export type AlbumArtistInfoResponse = {
+    biography?: null | string;
+    imageUrl?: null | string;
+    similarArtists: null | RelatedArtist[];
+};
 
 export type ArtistListArgs = BaseEndpointArgs & { query: ArtistListQuery };
 
@@ -1330,7 +1346,17 @@ export enum LyricSource {
     GENIUS = 'Genius',
     LRCLIB = 'lrclib.net',
     NETEASE = 'NetEase',
+    SIMPMUSIC = 'SimpMusic',
 }
+
+export type AlbumRadioArgs = BaseEndpointArgs & {
+    query: AlbumRadioQuery;
+};
+
+export type AlbumRadioQuery = {
+    albumId: string;
+    count?: number;
+};
 
 export type ArtistRadioArgs = BaseEndpointArgs & {
     query: ArtistRadioQuery;
@@ -1358,18 +1384,21 @@ export type ControllerEndpoint = {
     ) => Promise<DeleteInternetRadioStationResponse>;
     deletePlaylist: (args: DeletePlaylistArgs) => Promise<DeletePlaylistResponse>;
     getAlbumArtistDetail: (args: AlbumArtistDetailArgs) => Promise<AlbumArtistDetailResponse>;
+    getAlbumArtistInfo?: (args: AlbumArtistInfoArgs) => Promise<AlbumArtistInfoResponse | null>;
     getAlbumArtistList: (args: AlbumArtistListArgs) => Promise<AlbumArtistListResponse>;
     getAlbumArtistListCount: (args: AlbumArtistListCountArgs) => Promise<number>;
     getAlbumDetail: (args: AlbumDetailArgs) => Promise<AlbumDetailResponse>;
     getAlbumInfo?: (args: AlbumDetailArgs) => Promise<AlbumInfo>;
     getAlbumList: (args: AlbumListArgs) => Promise<AlbumListResponse>;
     getAlbumListCount: (args: AlbumListCountArgs) => Promise<number>;
+    getAlbumRadio: (args: AlbumRadioArgs) => Promise<Song[]>;
     getArtistList: (args: ArtistListArgs) => Promise<ArtistListResponse>;
     getArtistListCount: (args: ArtistListCountArgs) => Promise<number>;
     getArtistRadio: (args: ArtistRadioArgs) => Promise<Song[]>;
     getDownloadUrl: (args: DownloadArgs) => string;
     getFolder: (args: FolderArgs) => Promise<FolderResponse>;
     getGenreList: (args: GenreListArgs) => Promise<GenreListResponse>;
+    getImageRequest: (args: ImageArgs) => ImageRequest | null;
     getImageUrl: (args: ImageArgs) => null | string;
     getInternetRadioStations: (
         args: GetInternetRadioStationsArgs,
@@ -1450,6 +1479,13 @@ export type ImageQuery = {
     size?: number;
 };
 
+export type ImageRequest = {
+    cacheKey: string;
+    credentials?: RequestCredentials;
+    headers?: Record<string, string>;
+    url: string;
+};
+
 export type InternalControllerEndpoint = {
     addToPlaylist: (
         args: ReplaceApiClientProps<AddToPlaylistArgs>,
@@ -1475,6 +1511,9 @@ export type InternalControllerEndpoint = {
     getAlbumArtistDetail: (
         args: ReplaceApiClientProps<AlbumArtistDetailArgs>,
     ) => Promise<AlbumArtistDetailResponse>;
+    getAlbumArtistInfo?: (
+        args: ReplaceApiClientProps<AlbumArtistInfoArgs>,
+    ) => Promise<AlbumArtistInfoResponse | null>;
     getAlbumArtistList: (
         args: ReplaceApiClientProps<AlbumArtistListArgs>,
     ) => Promise<AlbumArtistListResponse>;
@@ -1485,6 +1524,7 @@ export type InternalControllerEndpoint = {
     getAlbumInfo?: (args: ReplaceApiClientProps<AlbumDetailArgs>) => Promise<AlbumInfo>;
     getAlbumList: (args: ReplaceApiClientProps<AlbumListArgs>) => Promise<AlbumListResponse>;
     getAlbumListCount: (args: ReplaceApiClientProps<AlbumListCountArgs>) => Promise<number>;
+    getAlbumRadio: (args: ReplaceApiClientProps<AlbumRadioArgs>) => Promise<Song[]>;
     // getArtistInfo?: (args: any) => void;
     getArtistList: (args: ReplaceApiClientProps<ArtistListArgs>) => Promise<ArtistListResponse>;
     getArtistListCount: (args: ReplaceApiClientProps<ArtistListCountArgs>) => Promise<number>;
@@ -1492,6 +1532,7 @@ export type InternalControllerEndpoint = {
     getDownloadUrl: (args: ReplaceApiClientProps<DownloadArgs>) => string;
     getFolder: (args: ReplaceApiClientProps<FolderArgs>) => Promise<FolderResponse>;
     getGenreList: (args: ReplaceApiClientProps<GenreListArgs>) => Promise<GenreListResponse>;
+    getImageRequest: (args: ReplaceApiClientProps<ImageArgs>) => ImageRequest | null;
     getImageUrl: (args: ReplaceApiClientProps<ImageArgs>) => null | string;
     getInternetRadioStations: (
         args: ReplaceApiClientProps<GetInternetRadioStationsArgs>,
