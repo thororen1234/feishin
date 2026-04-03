@@ -188,12 +188,12 @@ export type Album = {
     mbzId: null | string;
     mbzReleaseGroupId: null | string;
     name: string;
-    originalDate: null | string;
-    originalYear: null | number;
+    originalDate: null | PartialIsoDateString;
+    originalYear: number;
     participants: null | Record<string, RelatedArtist[]>;
     playCount: null | number;
     recordLabels: string[];
-    releaseDate: null | string;
+    releaseDate: null | PartialIsoDateString;
     releaseType: null | string;
     releaseTypes: string[];
     releaseYear: null | number;
@@ -326,6 +326,8 @@ export type MusicFolder = {
 
 export type MusicFoldersResponse = MusicFolder[];
 
+export type PartialIsoDateString = string;
+
 export type Playlist = {
     _itemType: LibraryItem.PLAYLIST;
     _serverId: string;
@@ -398,7 +400,7 @@ export type Song = {
     peak: GainInfo | null;
     playCount: number;
     playlistItemId?: string;
-    releaseDate: null | string;
+    releaseDate: null | PartialIsoDateString;
     releaseYear: null | number;
     sampleRate: null | number;
     size: number;
@@ -959,6 +961,16 @@ export type DeleteInternetRadioStationArgs = BaseEndpointArgs & {
     query: DeleteInternetRadioStationQuery;
 };
 
+export type DeleteInternetRadioStationImageArgs = BaseEndpointArgs & {
+    query: DeleteInternetRadioStationImageQuery;
+};
+
+export type DeleteInternetRadioStationImageQuery = {
+    id: string;
+};
+
+export type DeleteInternetRadioStationImageResponse = boolean;
+
 export type DeleteInternetRadioStationQuery = {
     id: string;
 };
@@ -999,10 +1011,13 @@ export type GetInternetRadioStationsArgs = BaseEndpointArgs;
 export type GetInternetRadioStationsResponse = InternetRadioStation[];
 
 export type InternetRadioStation = {
-    homepageUrl?: null | string;
+    homepageUrl: null | string;
     id: string;
+    imageId?: null | string;
+    imageUrl?: null | string;
     name: string;
     streamUrl: string;
+    uploadedImage?: null | string;
 };
 
 export type PlaylistListArgs = BaseEndpointArgs & { query: PlaylistListQuery };
@@ -1116,6 +1131,21 @@ export type UpdatePlaylistQuery = {
 
 // Update Playlist
 export type UpdatePlaylistResponse = null | undefined;
+
+export type UploadInternetRadioStationImageArgs = BaseEndpointArgs & {
+    body: UploadInternetRadioStationImageBody;
+    query: UploadInternetRadioStationImageQuery;
+};
+
+export type UploadInternetRadioStationImageBody = {
+    image: Uint8Array;
+};
+
+export type UploadInternetRadioStationImageQuery = {
+    id: string;
+};
+
+export type UploadInternetRadioStationImageResponse = boolean;
 
 export type UploadPlaylistImageArgs = BaseEndpointArgs & {
     body: UploadPlaylistImageBody;
@@ -1415,6 +1445,9 @@ export type ControllerEndpoint = {
     deleteInternetRadioStation: (
         args: DeleteInternetRadioStationArgs,
     ) => Promise<DeleteInternetRadioStationResponse>;
+    deleteInternetRadioStationImage?: (
+        args: DeleteInternetRadioStationImageArgs,
+    ) => Promise<DeleteInternetRadioStationImageResponse>;
     deletePlaylist: (args: DeletePlaylistArgs) => Promise<DeletePlaylistResponse>;
     deletePlaylistImage?: (args: DeletePlaylistImageArgs) => Promise<DeletePlaylistImageResponse>;
     getAlbumArtistDetail: (args: AlbumArtistDetailArgs) => Promise<AlbumArtistDetailResponse>;
@@ -1470,6 +1503,9 @@ export type ControllerEndpoint = {
         args: UpdateInternetRadioStationArgs,
     ) => Promise<UpdateInternetRadioStationResponse>;
     updatePlaylist: (args: UpdatePlaylistArgs) => Promise<UpdatePlaylistResponse>;
+    uploadInternetRadioStationImage?: (
+        args: UploadInternetRadioStationImageArgs,
+    ) => Promise<UploadInternetRadioStationImageResponse>;
     uploadPlaylistImage?: (args: UploadPlaylistImageArgs) => Promise<UploadPlaylistImageResponse>;
 };
 
@@ -1540,6 +1576,9 @@ export type InternalControllerEndpoint = {
     deleteInternetRadioStation: (
         args: ReplaceApiClientProps<DeleteInternetRadioStationArgs>,
     ) => Promise<DeleteInternetRadioStationResponse>;
+    deleteInternetRadioStationImage?: (
+        args: ReplaceApiClientProps<DeleteInternetRadioStationImageArgs>,
+    ) => Promise<DeleteInternetRadioStationImageResponse>;
     deletePlaylist: (
         args: ReplaceApiClientProps<DeletePlaylistArgs>,
     ) => Promise<DeletePlaylistResponse>;
@@ -1630,6 +1669,9 @@ export type InternalControllerEndpoint = {
     updatePlaylist: (
         args: ReplaceApiClientProps<UpdatePlaylistArgs>,
     ) => Promise<UpdatePlaylistResponse>;
+    uploadInternetRadioStationImage?: (
+        args: ReplaceApiClientProps<UploadInternetRadioStationImageArgs>,
+    ) => Promise<UploadInternetRadioStationImageResponse>;
     uploadPlaylistImage?: (
         args: ReplaceApiClientProps<UploadPlaylistImageArgs>,
     ) => Promise<UploadPlaylistImageResponse>;
